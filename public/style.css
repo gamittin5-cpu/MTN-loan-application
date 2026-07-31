@@ -32,7 +32,7 @@ body {
 
 .container {
   max-width: 480px;
-  margin: 25px auto;
+  margin: 40px auto; /* Medium spacing so it doesn't hang at the top */
   padding: 0 15px;
 }
 
@@ -40,7 +40,7 @@ body {
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-  padding: 25px;
+  padding: 30px 25px; /* Balanced vertical and horizontal padding */
 }
 
 .form-step h2 {
@@ -191,4 +191,3 @@ input, select, textarea {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
   }
-  
