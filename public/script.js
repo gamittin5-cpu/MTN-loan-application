@@ -1,27 +1,139 @@
 // Minimal view router and demo logic (no external dependencies)
-// Note: This frontend calls the minimal in-memory API in server.js. Replace with real API calls for production.
+// Updated for Zambia MoMo: currency K, phone validation for +260 (Zambia) only
+// Added calculator slider syncing and live calculation when sliders change
+// Enforced step validation: users cannot proceed until current step is valid
 (function () {
   const show = (id) => {
     document.querySelectorAll('[data-view]').forEach(s => s.classList.add('hidden'));
     const el = document.querySelector(`[data-view="${id}"]`);
     if (el) el.classList.remove('hidden');
+    setActiveStep(id);
     window.scrollTo(0,0);
   };
 
   // Simple client-side application state
   let currentApplication = null;
 
-  // Landing calculators
-  document.getElementById('calc-btn').addEventListener('click', () => {
-    const amount = Number(document.getElementById('calc-amount').value) || 0;
-    const term = Number(document.getElementById('calc-term').value) || 1;
-    const rate = 0.02; // demo monthly rate
-    const repayment = ((amount * rate) / (1 - Math.pow(1 + rate, -term))).toFixed(2);
-    document.getElementById('calc-result').textContent = `Approx monthly repayment: GHS ${repayment}`;
-  });
+  // Zambia phone regex: E.164 starting with +260 and 9 digits after (e.g. +260971234567)
+  const zambiaPhoneRegex = /^\+260\d{9}$/;
 
+  // Elements
+  const calcAmountInput = document.getElementById('calc-amount');
+  const calcAmountSlider = document.getElementById('calc-amount-slider');
+  const calcTermInput = document.getElementById('calc-term');
+  const calcTermSlider = document.getElementById('calc-term-slider');
+  const calcBtn = document.getElementById('calc-btn');
+  const calcResult = document.getElementById('calc-result');
+
+  // Step UI
+  const stepElements = Array.from(document.querySelectorAll('.step'));
+  function setActiveStep(stepId) {
+    stepElements.forEach(el => {
+      const id = el.dataset.step;
+      el.classList.toggle('active', id === stepId);
+    });
+  }
+  function markStepComplete(stepId, complete = true) {
+    const el = document.querySelector(`.step[data-step="${stepId}"]`);
+    if (!el) return;
+    if (complete) el.classList.add('complete'); else el.classList.remove('complete');
+  }
+
+  // Validate Step 1 fields
+  function validateStep1() {
+    const name = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const ok = name.length >= 2 && zambiaPhoneRegex.test(phone);
+    document.querySelector('#to-step2').disabled = !ok;
+    markStepComplete('step1', ok);
+    return ok;
+  }
+
+  // Validate Step 2 fields
+  function validateStep2() {
+    const employer = document.getElementById('employer').value.trim();
+    const income = Number(document.getElementById('income').value || 0);
+    const ok = employer.length >= 2 && income > 0;
+    document.querySelector('#to-step3').disabled = !ok;
+    markStepComplete('step2', ok);
+    return ok;
+  }
+
+  // Validate Step 3 (consent)
+  function validateStep3() {
+    const consent = document.getElementById('consent').checked;
+    document.querySelector('#submit-app').disabled = !consent;
+    markStepComplete('step3', consent);
+    return consent;
+  }
+
+  // Calculate repayment (simple amortizing loan formula)
+  function calculateRepayment(amount, term, monthlyRate = 0.02) {
+    if (!amount || !term) return 0;
+    const r = monthlyRate;
+    const n = term;
+    const payment = (amount * r) / (1 - Math.pow(1 + r, -n));
+    return Number(payment.toFixed(2));
+  }
+
+  function updateCalcResult() {
+    const amount = Number(calcAmountInput.value) || 0;
+    const term = Number(calcTermInput.value) || 1;
+    const repayment = calculateRepayment(amount, term);
+    calcResult.textContent = `Approx monthly repayment: K ${repayment.toLocaleString()}`;
+  }
+
+  // Sync sliders and inputs
+  function syncAmountFromSlider() {
+    calcAmountInput.value = calcAmountSlider.value;
+    updateCalcResult();
+  }
+  function syncAmountFromInput() {
+    let v = Number(calcAmountInput.value) || 0;
+    if (v < Number(calcAmountSlider.min)) v = Number(calcAmountSlider.min);
+    if (v > Number(calcAmountSlider.max)) v = Number(calcAmountSlider.max);
+    // round to step
+    const step = Number(calcAmountSlider.step) || 100;
+    v = Math.round(v / step) * step;
+    calcAmountInput.value = v;
+    calcAmountSlider.value = v;
+    updateCalcResult();
+  }
+  function syncTermFromSlider() {
+    calcTermInput.value = calcTermSlider.value;
+    updateCalcResult();
+  }
+  function syncTermFromInput() {
+    let v = Number(calcTermInput.value) || 1;
+    const min = Number(calcTermSlider.min) || 1;
+    const max = Number(calcTermSlider.max) || 24;
+    if (v < min) v = min;
+    if (v > max) v = max;
+    calcTermInput.value = v;
+    calcTermSlider.value = v;
+    updateCalcResult();
+  }
+
+  // Initial wiring
+  if (calcAmountSlider) calcAmountSlider.addEventListener('input', syncAmountFromSlider);
+  if (calcAmountInput) calcAmountInput.addEventListener('change', syncAmountFromInput);
+  if (calcTermSlider) calcTermSlider.addEventListener('input', syncTermFromSlider);
+  if (calcTermInput) calcTermInput.addEventListener('change', syncTermFromInput);
+
+  if (calcBtn) calcBtn.addEventListener('click', updateCalcResult);
+
+  // Initialize display
+  updateCalcResult();
+
+  // Real-time validation for step inputs
+  document.getElementById('name').addEventListener('input', validateStep1);
+  document.getElementById('phone').addEventListener('input', validateStep1);
+  document.getElementById('employer').addEventListener('input', validateStep2);
+  document.getElementById('income').addEventListener('input', validateStep2);
+  document.getElementById('consent').addEventListener('change', validateStep3);
+
+  // Start application: create draft and go to Step 1
   document.getElementById('start-application').addEventListener('click', async () => {
-    // create a draft application on server
     const payload = { status: 'draft', created_at: new Date().toISOString() };
     const res = await fetch('/applications', {
       method: 'POST',
@@ -34,13 +146,16 @@
 
   document.getElementById('momo-login-btn').addEventListener('click', () => show('momo'));
 
-  // Steps navigation
+  // to-step2: validate and save step1
   document.getElementById('to-step2').addEventListener('click', async () => {
+    if (!validateStep1()) return alert('Please complete your personal details with a valid Zambian MoMo number.');
     // save step1 to server
     const body = {
       name: document.getElementById('name').value,
       phone: document.getElementById('phone').value,
-      email: document.getElementById('email').value
+      email: document.getElementById('email').value,
+      desired_amount: Number(calcAmountInput.value) || 0,
+      desired_term: Number(calcTermInput.value) || 1
     };
     if (currentApplication && currentApplication.id) {
       await fetch('/applications/' + currentApplication.id, {
@@ -48,11 +163,15 @@
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify(body)
       });
+      const res = await fetch('/applications/' + currentApplication.id);
+      currentApplication = await res.json();
     }
     show('step2');
   });
 
+  // to-step3: validate and save step2
   document.getElementById('to-step3').addEventListener('click', async () => {
+    if (!validateStep2()) return alert('Please provide your employer and monthly income.');
     const body = {
       employer: document.getElementById('employer').value,
       jobTitle: document.getElementById('jobTitle').value,
@@ -64,7 +183,6 @@
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify(body)
       });
-      // refresh local copy
       const res = await fetch('/applications/' + currentApplication.id);
       currentApplication = await res.json();
     }
@@ -79,31 +197,56 @@
     });
   });
 
-  // Submit application -> processing -> waiting for admin -> success (simulated)
+  // Submit application -> server validation -> processing -> waiting for admin -> success (simulated)
   document.getElementById('submit-app').addEventListener('click', async () => {
-    const consent = document.getElementById('consent').checked;
-    if (!consent) return alert('Please consent to terms before submitting.');
+    if (!validateStep3()) return alert('You must consent to terms before submitting.');
     if (!currentApplication || !currentApplication.id) return alert('No application found.');
 
     show('processing');
-    await fetch('/applications/' + currentApplication.id + '/submit', { method: 'POST' });
+    const resp = await fetch('/applications/' + currentApplication.id + '/submit', { method: 'POST' });
+    if (resp.status === 400) {
+      const body = await resp.json();
+      alert('Server validation failed: ' + (body.message || JSON.stringify(body)));
+      // Back to first incomplete step
+      if (body.missing && body.missing.includes('name')) show('step1');
+      else if (body.missing && body.missing.includes('employer')) show('step2');
+      else show('step1');
+      return;
+    }
+
     // Polling demo: check status and simulate admin action after delay
     setTimeout(async () => {
       show('waiting-admin');
       // simulate admin approval after delay
-      setTimeout(() => {
-        show('success');
-        document.getElementById('approval-details').textContent = 'Approved: Disbursed GHS 5,000.00. Repayment: 6 months.';
+      setTimeout(async () => {
+        // If using Telegram webhook, real approval will update server state. For demo, mark approved
+        const resCheck = await fetch('/applications/' + currentApplication.id);
+        const appData = await resCheck.json();
+        if (appData.status === 'approved') {
+          show('success');
+          document.getElementById('approval-details').textContent = `Approved: Disbursed K ${appData.desired_amount || '5,000'}. Repayment: ${appData.desired_term || 6} months.`;
+        } else if (appData.status === 'rejected') {
+          show('processing');
+          setTimeout(() => { alert('Your application was rejected by admin.'); show('landing'); }, 800);
+        } else {
+          // fallback demo approve
+          show('success');
+          document.getElementById('approval-details').textContent = 'Approved: Disbursed K 5,000.00. Repayment: 6 months.';
+        }
       }, 3500);
     }, 1200);
   });
 
-  // MTN MoMo flow (simulated)
+  // MoMo flow (simulated)
   let smsTimerId = null;
   document.getElementById('momo-send-sms').addEventListener('click', () => {
+    const phone = document.getElementById('momo-phone').value.trim();
+    if (!zambiaPhoneRegex.test(phone)) {
+      return alert('Please enter a valid Zambian MoMo phone number in E.164 format (example: +260971234567).');
+    }
     show('sms-verify');
     startSmsTimer(60);
-    document.getElementById('sms-text').value = 'MTN MoMo code: 1234. Use to verify your login.';
+    document.getElementById('sms-text').value = 'MoMo Zambia code: 1234. Use to verify your login.';
   });
 
   function startSmsTimer(seconds) {
@@ -150,7 +293,7 @@
       show('processing');
       setTimeout(() => {
         show('success');
-        document.getElementById('approval-details').textContent = 'Logged in via MoMo and loan pre-check passed.';
+        document.getElementById('approval-details').textContent = 'Logged in via MoMo Zambia and loan pre-check passed.';
       }, 1200);
     } else {
       alert('Please enter all 4 digits of the OTP.');

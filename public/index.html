@@ -13,19 +13,37 @@
   </header>
 
   <main class="container">
+    <div class="progress">
+      <ol class="steps">
+        <li data-step="step1" class="step active">1. Personal <span class="check">✓</span></li>
+        <li data-step="step2" class="step">2. Employment <span class="check">✓</span></li>
+        <li data-step="step3" class="step">3. Confirm <span class="check">✓</span></li>
+      </ol>
+    </div>
+
     <!-- Landing / Loan Calculator View -->
     <section data-view="landing">
       <h1>Welcome — Loan Calculator (Zambia)</h1>
       <p>Estimate repayments quickly or start a loan application. Currency: Zambian Kwacha (K)</p>
       <div class="card">
-        <label>Amount (K):
-          <input id="calc-amount" type="number" value="5000" />
-        </label>
-        <label>Term (months):
-          <input id="calc-term" type="number" value="6" />
-        </label>
-        <button id="calc-btn">Calculate</button>
-        <div id="calc-result" class="muted"></div>
+        <div class="calc-row">
+          <div class="calc-col">
+            <label>Amount (K):
+              <input id="calc-amount" type="number" value="5000" min="100" max="20000" step="100" />
+            </label>
+            <input id="calc-amount-slider" type="range" min="100" max="20000" step="100" value="5000" />
+          </div>
+          <div class="calc-col">
+            <label>Term (months):
+              <input id="calc-term" type="number" value="6" min="1" max="24" step="1" />
+            </label>
+            <input id="calc-term-slider" type="range" min="1" max="24" step="1" value="6" />
+          </div>
+        </div>
+        <div class="calc-result-row">
+          <button id="calc-btn">Calculate</button>
+          <div id="calc-result" class="muted"></div>
+        </div>
       </div>
       <div class="actions">
         <button id="start-application">Apply for Loan</button>
@@ -43,7 +61,7 @@
         <label>Email: <input id="email" type="email" /></label>
       </div>
       <div class="actions">
-        <button id="to-step2">Next</button>
+        <button id="to-step2" class="next-button" disabled>Next</button>
         <button class="back" data-back="landing">Cancel</button>
       </div>
     </section>
@@ -57,7 +75,7 @@
         <label>Monthly income (K): <input id="income" type="number" /></label>
       </div>
       <div class="actions">
-        <button id="to-step3">Next</button>
+        <button id="to-step3" class="next-button" disabled>Next</button>
         <button class="back" data-back="step1">Back</button>
       </div>
     </section>
@@ -70,7 +88,7 @@
         <label><input id="consent" type="checkbox" /> I consent to terms and checks</label>
       </div>
       <div class="actions">
-        <button id="submit-app">Submit Application</button>
+        <button id="submit-app" disabled>Submit Application</button>
         <button class="back" data-back="step2">Back</button>
       </div>
     </section>

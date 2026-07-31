@@ -21,6 +21,9 @@ function tgApiPath(method) {
 let inMemoryApplications = {};
 let nextAppId = 1;
 
+// Zambia phone regex: E.164 starting with +260 and 9 digits after (e.g. +260971234567)
+const zambiaPhoneRegex = /^\+260\d{9}$/;
+
 // ===== Serve admin route (simple token check) =====
 app.get('/admin', (req, res) => {
   const token = req.query.token || '';
@@ -60,11 +63,23 @@ app.patch('/applications/:id', (req, res) => {
   res.json(updated);
 });
 
-// When application submitted, notify admin via Telegram with inline buttons
+// When application submitted, validate fields, then notify admin via Telegram with inline buttons
 app.post('/applications/:id/submit', async (req, res) => {
   const id = req.params.id;
   const existing = inMemoryApplications[id];
   if (!existing) return res.status(404).json({ error: 'Not found' });
+
+  // Server-side validation: ensure required fields present and valid
+  const errors = [];
+  if (!existing.name || String(existing.name).trim().length < 2) errors.push('name');
+  if (!existing.phone || !zambiaPhoneRegex.test(String(existing.phone).trim())) errors.push('phone');
+  if (!existing.employer || String(existing.employer).trim().length < 2) errors.push('employer');
+  const incomeVal = Number(existing.income || 0);
+  if (!(incomeVal > 0)) errors.push('income');
+
+  if (errors.length) {
+    return res.status(400).json({ error: 'validation_failed', missing: errors, message: 'Please complete all required application steps before submitting.' });
+  }
 
   existing.status = 'pending';
   existing.updated_at = new Date().toISOString();
@@ -72,7 +87,7 @@ app.post('/applications/:id/submit', async (req, res) => {
   // Send Telegram notification with inline approve/reject buttons
   try {
     if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-      const text = `New loan application: #${id}\n\nName: ${existing.name || '-'}\nPhone: ${existing.phone || '-'}\nIncome: ${existing.income || '-'}\n\nTap to approve or reject.`;
+      const text = `New loan application: #${id}\n\nName: ${existing.name || '-'}\nPhone: ${existing.phone || '-'}\nIncome: ${existing.income || '-'}\nAmount requested: K ${existing.desired_amount || '-'}\nTerm (months): ${existing.desired_term || '-'}\n\nTap to approve or reject.`;
       const keyboard = {
         inline_keyboard: [
           [
