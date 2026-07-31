@@ -6,7 +6,6 @@ function updateCalculator() {
   
   document.getElementById('display-amount').innerText = `ZMW ${formattedAmount}`;
   
-  // Dynamic calculation preview simulation matching reference
   const calculatedMonthly = Math.round(sliderVal / 48);
   document.getElementById('display-monthly').innerText = `ZMW ${calculatedMonthly.toLocaleString()}`;
 }
@@ -89,5 +88,4 @@ function pollApplicationStatus() {
       console.error('Polling error:', e);
     }
   }, 3000);
-  }
-    
+                      }
