@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loan Application</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <!-- Access Denied is a separate file and route; main SPA views below -->
+
+    <!-- Landing / Loan Calculator View -->
+    <section data-view="landing">
+      <h1>Welcome — Loan Calculator</h1>
+      <p>Estimate repayments quickly or start a loan application.</p>
+      <div class="card">
+        <label>Amount:
+          <input id="calc-amount" type="number" value="5000" />
+        </label>
+        <label>Term (months):
+          <input id="calc-term" type="number" value="6" />
+        </label>
+        <button id="calc-btn">Calculate</button>
+        <div id="calc-result" class="muted"></div>
+      </div>
+      <div class="actions">
+        <button id="start-application">Apply for Loan</button>
+        <button id="momo-login-btn">Login via MTN MoMo</button>
+      </div>
+    </section>
+
+    <!-- Loan Application Step 1 -->
+    <section class="hidden" data-view="step1">
+      <h2>Application — Step 1: Personal Details</h2>
+      <div class="card">
+        <label>Full name: <input id="name" /></label>
+        <label>Phone: <input id="phone" placeholder="+233..." /></label>
+        <label>Email: <input id="email" type="email" /></label>
+      </div>
+      <div class="actions">
+        <button id="to-step2">Next</button>
+        <button class="back" data-back="landing">Cancel</button>
+      </div>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="hidden" data-view="step2">
+      <h2>Application — Step 2: Income & Employment</h2>
+      <div class="card">
+        <label>Employer: <input id="employer" /></label>
+        <label>Job title: <input id="jobTitle" /></label>
+        <label>Monthly income: <input id="income" type="number" /></label>
+      </div>
+      <div class="actions">
+        <button id="to-step3">Next</button>
+        <button class="back" data-back="step1">Back</button>
+      </div>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="hidden" data-view="step3">
+      <h2>Application — Step 3: Confirm & Submit</h2>
+      <div class="card">
+        <pre id="summary" class="muted"></pre>
+        <label><input id="consent" type="checkbox" /> I consent to terms and checks</label>
+      </div>
+      <div class="actions">
+        <button id="submit-app">Submit Application</button>
+        <button class="back" data-back="step2">Back</button>
+      </div>
+    </section>
+
+    <!-- Processing / Loading -->
+    <section class="hidden" data-view="processing">
+      <h2>Processing Application...</h2>
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Please wait while we process your request.</p>
+    </section>
+
+    <!-- Waiting for Admin Approval -->
+    <section class="hidden" data-view="waiting-admin">
+      <h2>Waiting for Admin Approval</h2>
+      <p>We have submitted your application to an administrator. This screen appears while waiting.</p>
+      <p class="muted">(In production you would receive a notification when admin acts.)</p>
+    </section>
+
+    <!-- MTN MoMo Login -->
+    <section class="hidden" data-view="momo">
+      <h2>Login via MTN MoMo</h2>
+      <div class="card">
+        <label>Phone number: <input id="momo-phone" placeholder="+233..." /></label>
+        <label>PIN: <input id="momo-pin" type="password" /></label>
+      </div>
+      <div class="actions">
+        <button id="momo-send-sms">Request SMS</button>
+        <button class="back" data-back="landing">Back</button>
+      </div>
+    </section>
+
+    <!-- SMS Verification (copy/paste) -->
+    <section class="hidden" data-view="sms-verify">
+      <h2>SMS Verification</h2>
+      <p>Copy/paste the SMS message you received from MoMo below.</p>
+      <textarea id="sms-text" placeholder="Paste SMS here"></textarea>
+      <p>Timer: <span id="sms-timer">60</span>s</p>
+      <div class="actions">
+        <button id="sms-accept">Use this SMS</button>
+        <button class="back" data-back="momo">Back</button>
+      </div>
+    </section>
+
+    <!-- OTP Verification -->
+    <section class="hidden" data-view="otp">
+      <h2>Enter OTP</h2>
+      <div class="otp">
+        <input class="otp-digit" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit" maxlength="1" inputmode="numeric" />
+      </div>
+      <div class="actions">
+        <button id="verify-otp">Verify</button>
+        <button class="back" data-back="sms-verify">Back</button>
+      </div>
+    </section>
+
+    <!-- Success / Loan Approved -->
+    <section class="hidden" data-view="success">
+      <h2>Loan Approved</h2>
+      <div class="card">
+        <p id="approval-details">Congratulations — your loan has been approved. Payout breakdown will appear here.</p>
+      </div>
+      <div class="actions">
+        <button id="done">Done</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
