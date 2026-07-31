@@ -1,48 +1,76 @@
-:root {
-  --bg-top: #e6f0fa; /* soft blue tint */
-  --bg-bottom: #cce0ff; /* deeper light blue background */
-  --card: #ffffff;
-  --muted: #4a5568;
-  --accent: #ffd400; /* MTN / MoMo Yellow */
-  --accent-dark: #f0b800;
-  --accent-text: #0b0b0b; 
-  --header-bg: #003366; /* Deep blue header */
-  --header-text: #ffd400; /* Yellow text on blue header */
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+.form-step h2, .form-step h3 {
+  color: #003366;
+  margin-top: 0;
 }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-
-body {
-  margin: 0;
-  color: #111;
-  /* Blue and yellow harmonious gradient background */
-  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 60%, #f7f8fa 100%);
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 60%), linear-gradient(135deg, rgba(0,51,102,0.03) 25%, transparent 25%, transparent 50%, rgba(0,51,102,0.03) 50%, rgba(0,51,102,0.03) 75%, transparent 75%, transparent);
-  background-size: auto, 16px 16px;
+.subtitle {
+  color: #718096;
+  font-size: 14px;
+  margin-bottom: 20px;
 }
 
-.header {
-  background: var(--header-bg);
-  color: var(--header-text);
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 4px 20px rgba(0,51,102,0.15);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-
-.header .logo {
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  color: var(--header-text);
-}
-
-.header .tag {
+label {
+  display: block;
+  font-weight: 600;
   font-size: 13px;
-  color: rgba(255,212,0,0.85);
+  color: #4a5568;
+  margin-bottom: 5px;
+  margin-top: 15px;
 }
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background-color: #003366;
+  color: #ffd400;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 25px;
+}
+
+.btn-secondary {
+  background-color: #e2e8f0;
+  color: #2d3748;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.btn-group .btn-primary {
+  margin-top: 0;
+}
+
+.spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #003366;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 30px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+  }
