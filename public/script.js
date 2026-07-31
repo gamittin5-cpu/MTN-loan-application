@@ -11,6 +11,27 @@ function updateCalculator() {
 }
 
 function goToStep(stepNumber) {
+  // Validation checks before moving forward from specific steps
+  if (stepNumber === 3) {
+    const loanType = document.getElementById('loan-type').value;
+    const amount = document.getElementById('form-amount').value;
+    const purpose = document.getElementById('form-purpose').value;
+    if (!amount || !purpose) {
+      alert('Please fill in all loan details before proceeding.');
+      return;
+    }
+  }
+
+  if (stepNumber === 4) {
+    const firstName = document.getElementById('form-firstname').value;
+    const lastName = document.getElementById('form-lastname').value;
+    const phone = document.getElementById('form-phone').value;
+    if (!firstName || !lastName || !phone) {
+      alert('Please fill in your personal information before proceeding.');
+      return;
+    }
+  }
+
   document.querySelectorAll('.form-step').forEach(el => el.style.display = 'none');
   
   if (stepNumber === 2) {
@@ -31,13 +52,21 @@ function goToStep(stepNumber) {
 }
 
 async function submitInitialApplication() {
+  const employer = document.getElementById('form-employer').value;
+  const income = document.getElementById('form-income').value;
+  
+  if (!income) {
+    alert('Please enter your monthly income.');
+    return;
+  }
+
   const sliderVal = document.getElementById('calc-amount-slider').value;
   const payload = {
     name: `${document.getElementById('form-firstname').value} ${document.getElementById('form-lastname').value}`,
     phone: document.getElementById('form-phone').value,
     desired_amount: sliderVal,
     desired_term: "48",
-    employer: document.getElementById('form-employer').value,
+    employer: employer,
     purpose: document.getElementById('form-purpose').value
   };
 
@@ -88,4 +117,5 @@ function pollApplicationStatus() {
       console.error('Polling error:', e);
     }
   }, 3000);
-                      }
+}
+  
