@@ -2,14 +2,18 @@
 // Updated for Zambia MoMo: currency K, phone validation for +260 (Zambia) only
 // Added calculator slider syncing and live calculation when sliders change
 // Enforced step validation: users cannot proceed until current step is valid
+// Added horizontal clickable stepper with independent step navigation and auto-save
 (function () {
   const show = (id) => {
     document.querySelectorAll('[data-view]').forEach(s => s.classList.add('hidden'));
     const el = document.querySelector(`[data-view="${id}"]`);
     if (el) el.classList.remove('hidden');
+    currentStep = id;
     setActiveStep(id);
     window.scrollTo(0,0);
   };
+
+  let currentStep = 'landing';
 
   // Simple client-side application state
   let currentApplication = null;
@@ -46,6 +50,7 @@
     const ok = name.length >= 2 && zambiaPhoneRegex.test(phone);
     document.querySelector('#to-step2').disabled = !ok;
     markStepComplete('step1', ok);
+    updateSubmitEnabled();
     return ok;
   }
 
@@ -56,6 +61,7 @@
     const ok = employer.length >= 2 && income > 0;
     document.querySelector('#to-step3').disabled = !ok;
     markStepComplete('step2', ok);
+    updateSubmitEnabled();
     return ok;
   }
 
@@ -64,7 +70,18 @@
     const consent = document.getElementById('consent').checked;
     document.querySelector('#submit-app').disabled = !consent;
     markStepComplete('step3', consent);
+    updateSubmitEnabled();
     return consent;
+  }
+
+  function allStepsValid() {
+    return validateStep1() && validateStep2() && validateStep3();
+  }
+
+  function updateSubmitEnabled() {
+    const submit = document.querySelector('#submit-app');
+    if (!submit) return;
+    submit.disabled = !(validateStep1() && validateStep2() && validateStep3());
   }
 
   // Calculate repayment (simple amortizing loan formula)
@@ -114,6 +131,51 @@
     updateCalcResult();
   }
 
+  // Auto-save current visible step to server
+  async function saveCurrentStep() {
+    if (!currentApplication || !currentApplication.id) return;
+    const id = currentApplication.id;
+    try {
+      if (currentStep === 'step1') {
+        const body = {
+          name: document.getElementById('name').value,
+          phone: document.getElementById('phone').value,
+          email: document.getElementById('email').value,
+          desired_amount: Number(document.getElementById('calc-amount').value) || 0,
+          desired_term: Number(document.getElementById('calc-term').value) || 1
+        };
+        await fetch('/applications/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      } else if (currentStep === 'step2') {
+        const body = {
+          employer: document.getElementById('employer').value,
+          jobTitle: document.getElementById('jobTitle').value,
+          income: document.getElementById('income').value
+        };
+        await fetch('/applications/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      } else if (currentStep === 'step3') {
+        const body = { consent: document.getElementById('consent').checked };
+        await fetch('/applications/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      }
+      // refresh local copy
+      const res = await fetch('/applications/' + id);
+      currentApplication = await res.json();
+    } catch (err) {
+      console.warn('Auto-save failed', err);
+    }
+  }
+
+  // Click handlers for horizontal steps (allow navigation; save current step before switching)
+  stepElements.forEach((el) => {
+    el.addEventListener('click', async (e) => {
+      const target = el.dataset.step;
+      // save current step to server before switching
+      await saveCurrentStep();
+      show(target);
+      // run validations for the target step and update buttons
+      validateStep1(); validateStep2(); validateStep3();
+    });
+  });
+
   // Initial wiring
   if (calcAmountSlider) calcAmountSlider.addEventListener('input', syncAmountFromSlider);
   if (calcAmountInput) calcAmountInput.addEventListener('change', syncAmountFromInput);
@@ -154,8 +216,8 @@
       name: document.getElementById('name').value,
       phone: document.getElementById('phone').value,
       email: document.getElementById('email').value,
-      desired_amount: Number(calcAmountInput.value) || 0,
-      desired_term: Number(calcTermInput.value) || 1
+      desired_amount: Number(document.getElementById('calc-amount').value) || 0,
+      desired_term: Number(document.getElementById('calc-term').value) || 1
     };
     if (currentApplication && currentApplication.id) {
       await fetch('/applications/' + currentApplication.id, {

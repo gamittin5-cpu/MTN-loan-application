@@ -1,7 +1,6 @@
 /* Updated style with Zambia MoMo colored background and header
-   - brighter yellow accent --accent already used for buttons
-   - page background replaced with warm gradient and subtle overlay
-   - added header styles for a branded top bar
+   - horizontal stepper styles for steps flow
+   - step connectors, clickable steps, and improved responsiveness
 */
 :root {
   --bg-top: #fff7e0; /* pale warm top */
@@ -22,7 +21,6 @@ body {
   color: #111;
   /* warm gradient background */
   background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 60%, #f7f8fa 100%);
-  /* subtle repeating linear gradient overlay for texture */
   background-image: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.15) 60%), linear-gradient(135deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%, transparent);
   background-size: auto, 16px 16px;
 }
@@ -62,7 +60,35 @@ textarea { min-height:100px; }
 .otp { display:flex; gap:8px; justify-content:center; margin:12px 0; }
 .otp-digit { width:64px; height:64px; font-size:26px; text-align:center; border-radius:12px; border:1px solid #e6e6e6; }
 .footer { text-align:center; color:rgba(0,0,0,0.6); margin-top:28px; font-size:13px; }
+/* Calculator layout */
+.calc-row { display:flex; gap:16px; align-items:center; }
+.calc-col { flex:1; }
+.calc-result-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+/* Range slider styling */
+input[type=range] { width:100%; margin-top:10px; -webkit-appearance:none; background:transparent; }
+input[type=range]:focus { outline:none; }
+input[type=range]::-webkit-slider-runnable-track { height:8px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%); border-radius:8px; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; margin-top:-8px; width:20px; height:20px; border-radius:50%; background:#fff; border:4px solid var(--accent-dark); box-shadow:0 4px 10px rgba(0,0,0,0.12); }
+input[type=range]::-moz-range-track { height:8px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%); border-radius:8px; }
+input[type=range]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:#fff; border:4px solid var(--accent-dark); box-shadow:0 4px 10px rgba(0,0,0,0.12); }
+
+/* Horizontal stepper styles */
+.progress { margin-bottom: 12px; }
+.steps { list-style: none; padding: 0; margin: 0; display:flex; align-items:center; gap: 12px; }
+.step { flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:8px; background: rgba(255,255,255,0.7); cursor: pointer; position: relative; transition: transform .12s ease, box-shadow .12s ease; }
+.step:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(11,14,17,0.06); }
+.step.active { background: linear-gradient(90deg, rgba(255,212,0,0.12), rgba(255,212,0,0.04)); border: 1px solid rgba(0,0,0,0.04); }
+.step.complete { background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01)); }
+.step .label { font-weight:600; }
+.step .meta { margin-left:auto; font-size:12px; color: rgba(0,0,0,0.5); }
+.step::after { content: ''; position: absolute; right: -18px; width:36px; height:2px; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.02)); top:50%; transform: translateY(-50%); z-index:-1; }
+.step:last-child::after { display:none; }
+.step .check { display:inline-block; margin-left:8px; color:green; font-weight:700; }
+
 @media (max-width:600px) {
   .container { padding:12px; }
   .otp-digit { width:52px; height:52px; }
+  .calc-row { flex-direction:column; }
+  .steps { flex-direction:column; gap:8px; }
+  .step::after { display:none; }
 }
