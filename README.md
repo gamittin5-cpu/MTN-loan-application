@@ -1,47 +1,45 @@
-# Loan UI (Express + Static Frontend) with Telegram admin approval
+# MTN MoMo Loan Application System
 
-This project implements the UI and an Express API that notifies an admin via Telegram when a new application is submitted. Admins can Approve or Reject using inline buttons (Telegram). This demo uses in-memory storage — replace with a DB for production.
+A full-stack Node.js application for managing loan applications with Telegram bot integration for real-time admin approvals.
 
-Environment variables
-- ADMIN_TOKEN — existing admin token used for /admin route (optional)
-- TELEGRAM_BOT_TOKEN — required for Telegram integration (from BotFather)
-- TELEGRAM_CHAT_ID — chat id (group or user) where the bot sends notifications
-- TELEGRAM_WEBHOOK_SECRET — optional secret segment to include in webhook path (recommended)
-- PORT — server port (default 3000)
+Features
+- Landing view with MTN MoMo branding and interactive loan calculator (ZMW/Kwacha)
+- 3-step loan application: loan type & purpose, personal info, employment & income
+- Login via MoMo phone + 5-digit PIN (frontend simulated)
+- SMS copy/paste verification with 59s countdown and OTP verification
+- Admin approval via Telegram inline buttons (Approve / Reject)
+- In-memory demo storage (replace with Postgres/Mongo for production)
 
-How it works
-- On application submit (POST /applications/:id/submit) the server sends a Telegram message to TELEGRAM_CHAT_ID with Approve / Reject inline buttons.
-- You must configure Telegram to send webhook updates to your server (see below). When a callback_query arrives at the webhook endpoint, the server updates the application status and edits the Telegram message to show who acted.
+Setup
+1. Install dependencies:
 
-Set Telegram webhook (after deploying)
-- If you set TELEGRAM_WEBHOOK_SECRET to e.g. mysecret, set webhook URL to:
-  https://<your-domain>/telegram/webhook/mysecret
-- If no secret set, webhook URL:
-  https://<your-domain>/telegram/webhook
-
-Set webhook via curl:
+```bash
+npm install
 ```
-curl -X GET "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://<your-domain>/telegram/webhook/<OPTIONAL_SECRET>"
+
+2. Create a `.env` file (copy from `.env.example`) and set values:
+
 ```
-Replace `<TELEGRAM_BOT_TOKEN>` and `<your-domain>`.
+PORT=3000
+ADMIN_TOKEN=your_secure_admin_token_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+TELEGRAM_WEBHOOK_SECRET=your_webhook_secret_here
+```
 
-Example flow
-1. User starts application (frontend calls POST /applications) — in-memory draft is created.
-2. User fills steps, submits (POST /applications/:id/submit).
-3. Server sets status pending and sends Telegram message with inline buttons to TELEGRAM_CHAT_ID.
-4. Admin taps Approve/Reject in Telegram; Telegram sends callback_query to your webhook.
-5. Server processes callback, updates application status (approved/rejected) and edits the Telegram message.
+3. Run the server:
 
-Security notes & next steps
-- Replace in-memory storage with a DB (Postgres, Mongo, etc.) and persist admin actions.
-- Verify webhook origin: Telegram does not sign payloads; use a secret path (TELEGRAM_WEBHOOK_SECRET) and TLS-only webhook URL.
-- Consider checking callback_query.from.id against a list of allowed admin user IDs (if you want only specific users to be allowed).
-- Add audit logging and notify applicant after admin action.
-- Use rate limiting and enforce strong admin auth for /admin route.
+```bash
+npm start
+```
 
-What I recommend you do next (quick checklist)
-1. Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to your Render environment.
-2. Deploy the service.
-3. Set Telegram webhook to point to https://<your-render-service>/telegram/webhook/<optional-secret>.
-4. Test: submit an application via the UI and click Approve/Reject in Telegram.
-5. Replace in-memory storage with a real DB and extend notifications to applicants.
+API Endpoints
+- POST /applications — create a draft application
+- POST /applications/:id/submit — submit and notify admin via Telegram
+- GET /applications/:id — fetch application
+- POST /telegram/webhook/:secret — Telegram callback handler (set webhook to this URL)
+- GET /admin?token=... — admin JSON view (requires ADMIN_TOKEN)
+
+Notes
+- This repository is a demo scaffold. Replace the in-memory "applications" store with a persistent database for production.
+- Add server-side validation, rate limiting, and secure handling of OTP/SMS when integrating real MoMo providers.
