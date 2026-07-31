@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
@@ -9,9 +8,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // In-memory storage for applications
 const applications = {};
 
-// Replace with your actual Telegram Bot Token and Chat ID
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_BOT_TOKEN';
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 'YOUR_CHAT_ID';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 // 1. Create a new loan application
 app.post('/applications', (req, res) => {
@@ -84,7 +82,7 @@ app.post('/telegram-webhook', async (req, res) => {
 
   if (update.callback_query) {
     const callbackQuery = update.callback_query;
-    const data = callbackQuery.data; // Format: "approve_APP-XXXXXXXXX" or "reject_APP-XXXXXXXXX"
+    const data = callbackQuery.data; 
     const [action, appId] = data.split('_');
 
     if (applications[appId]) {
@@ -95,7 +93,6 @@ app.post('/telegram-webhook', async (req, res) => {
       }
     }
 
-    // Acknowledge the callback query to remove loading state from the Telegram button
     try {
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: 'POST',
@@ -117,4 +114,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-    
