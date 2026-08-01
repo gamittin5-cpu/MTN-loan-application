@@ -1,193 +1,197 @@
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f2f4f7;
-  margin: 0;
-  padding: 0;
-  color: #1a202c;
+:root {
+  --primary-navy: #001f3f;
+  --accent-yellow: #ffcc00;
+  --bg-light: #f4f7f6;
+  --text-dark: #333333;
+  --white: #ffffff;
+  --gray-border: #ccd1d1;
 }
 
-.header {
-  background-color: #001f3f;
-  color: #ffcc00;
-  padding: 12px 20px;
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.portal-container {
+  width: 100%;
+  max-width: 480px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 31, 63, 0.1);
+  overflow: hidden;
+  margin: 20px;
+}
+
+.portal-header {
+  background-color: var(--primary-navy);
+  color: var(--white);
+  padding: 24px;
+  text-align: center;
+}
+
+.brand-badge {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.momo-badge {
-  background-color: #ffcc00;
-  color: #001f3f;
-  font-weight: 900;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 14px;
-  letter-spacing: 0.5px;
-}
-
-.tag {
-  font-size: 12px;
-  color: #ffffff;
-}
-
-.container {
-  max-width: 480px;
-  margin: 40px auto; /* Medium spacing so it doesn't hang at the top */
-  padding: 0 15px;
-}
-
-.card {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-  padding: 30px 25px; /* Balanced vertical and horizontal padding */
-}
-
-.form-step h2 {
-  color: #1a202c;
-  text-align: center;
-  font-size: 22px;
-  margin-bottom: 5px;
-}
-
-.form-step h3 {
-  color: #001f3f;
-  margin-top: 0;
-}
-
-.subtitle {
-  color: #718096;
-  font-size: 13px;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.calculator-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 20px;
-}
-
-.calc-header {
-  font-weight: bold;
-  font-size: 14px;
-  color: #2d3748;
   margin-bottom: 12px;
 }
 
-.calc-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.label-text {
-  color: #4a5568;
-}
-
-.highlight-yellow {
-  color: #d69e2e;
-  font-weight: bold;
-}
-
-.range-container {
-  margin: 15px 0;
-}
-
-input[type="range"] {
-  width: 100%;
-  accent-color: #ffcc00;
-  cursor: pointer;
-}
-
-.range-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: #a0aec0;
-  margin-top: 4px;
-}
-
-.monthly-payment-box {
-  background: #ffffff;
-  border: 1px solid #edf2f7;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 15px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  color: #4a5568;
-  margin-bottom: 5px;
-  margin-top: 15px;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #cbd5e0;
-  border-radius: 8px;
-  box-sizing: border-box;
-  font-size: 14px;
-}
-
-.btn-primary {
-  background-color: #002244;
-  color: #ffffff;
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 15px;
-  cursor: pointer;
-  margin-top: 10px;
+.momo-logo-text {
+  font-size: 1.2rem;
   letter-spacing: 0.5px;
 }
 
-.btn-secondary {
-  background-color: #e2e8f0;
-  color: #2d3748;
-  padding: 14px 20px;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
+.momo-logo-text b {
+  color: var(--accent-yellow);
 }
 
-.btn-group {
+.verified-tag {
+  background-color: var(--accent-yellow);
+  color: var(--primary-navy);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.portal-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 4px 0;
+}
+
+.portal-header p {
+  font-size: 0.85rem;
+  color: #b0c4de;
+  margin: 0;
+}
+
+/* Horizontal Step Indicator */
+.steps-indicator {
   display: flex;
-  gap: 10px;
-  margin-top: 25px;
+  background-color: #0b2545;
+  padding: 10px 16px;
+  justify-content: space-between;
 }
 
-.btn-group .btn-primary {
+.step-indicator-item {
+  font-size: 0.75rem;
+  color: #8899a6;
+  font-weight: 600;
+}
+
+.step-indicator-item.active {
+  color: var(--accent-yellow);
+}
+
+/* Form Card Layout */
+.card {
+  padding: 24px;
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  color: var(--primary-navy);
   margin-top: 0;
 }
 
-.spinner {
-  width: 45px;
-  height: 45px;
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #001f3f;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 30px auto;
+.card p {
+  font-size: 0.9rem;
+  color: #666;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.slider-group, .input-group {
+  margin-bottom: 20px;
+}
+
+.slider-group label, .input-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--primary-navy);
+}
+
+.slider-group input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary-navy);
+}
+
+.input-group input, .input-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid var(--gray-border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus, .input-group textarea:focus {
+  border-color: var(--primary-navy);
+}
+
+.hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* Action Buttons */
+.btn-primary {
+  width: 100%;
+  background-color: var(--accent-yellow);
+  color: var(--primary-navy);
+  border: none;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Success Screen Styles */
+.success-card {
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  background-color: #27ae60;
+  color: var(--white);
+  font-size: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+}
+
+.badge-verified-box {
+  display: inline-block;
+  margin-top: 20px;
+  background-color: #eafaf1;
+  color: #27ae60;
+  border: 1px solid #27ae60;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 4px;
   }
+  
