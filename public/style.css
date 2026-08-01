@@ -21,18 +21,18 @@ body {
 
 .portal-container {
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
   background: var(--white);
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 31, 63, 0.1);
   overflow: hidden;
-  margin: 20px;
+  margin: 15px;
 }
 
 .portal-header {
   background-color: var(--primary-navy);
   color: var(--white);
-  padding: 24px;
+  padding: 16px 20px;
   text-align: center;
 }
 
@@ -40,12 +40,12 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
 }
 
 .momo-logo-text {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   letter-spacing: 0.5px;
+  color: var(--white);
 }
 
 .momo-logo-text b {
@@ -55,87 +55,187 @@ body {
 .verified-tag {
   background-color: var(--accent-yellow);
   color: var(--primary-navy);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 4px;
 }
 
-.portal-header h1 {
-  font-size: 1.5rem;
-  margin: 0 0 4px 0;
-}
-
-.portal-header p {
-  font-size: 0.85rem;
-  color: #b0c4de;
-  margin: 0;
-}
-
-/* Horizontal Step Indicator */
-.steps-indicator {
-  display: flex;
-  background-color: #0b2545;
-  padding: 10px 16px;
-  justify-content: space-between;
-}
-
-.step-indicator-item {
-  font-size: 0.75rem;
-  color: #8899a6;
-  font-weight: 600;
-}
-
-.step-indicator-item.active {
-  color: var(--accent-yellow);
-}
-
-/* Form Card Layout */
 .card {
   padding: 24px;
 }
 
+.text-center {
+  text-align: center;
+}
+
 .card h2 {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: var(--primary-navy);
   margin-top: 0;
+  margin-bottom: 4px;
 }
 
-.card p {
-  font-size: 0.9rem;
+.subtitle {
+  font-size: 0.85rem;
   color: #666;
-}
-
-.slider-group, .input-group {
   margin-bottom: 20px;
 }
 
-.slider-group label, .input-group label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--primary-navy);
+/* Calculator Box Styles (Matches 1000045582.png) */
+.calculator-box {
+  background-color: #fcfcfc;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.highlight-yellow {
+  color: #d4ac0d;
+  font-weight: 700;
+}
+
+.monthly-row {
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+  margin-bottom: 0;
+}
+
+.monthly-val {
+  font-size: 1.2rem;
+}
+
+.slider-group {
+  margin: 16px 0;
 }
 
 .slider-group input[type="range"] {
   width: 100%;
-  accent-color: var(--primary-navy);
+  accent-color: var(--accent-yellow);
 }
 
-.input-group input, .input-group textarea {
+.slider-limits {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #888;
+}
+
+/* Navigation Links & Indicators */
+.nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px 0 20px;
+}
+
+.back-link {
+  background: none;
+  border: none;
+  color: var(--primary-navy);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.step-title-tracker {
+  font-weight: 700;
+  color: var(--primary-navy);
+  font-size: 1rem;
+}
+
+.horizontal-steps {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 0 20px;
+}
+
+.step-line {
+  flex: 1;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+}
+
+.step-line.active {
+  background-color: var(--accent-yellow);
+}
+
+.step-counter-text {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+  margin: 6px 0 16px 0;
+}
+
+/* Form Layouts & Inputs */
+.input-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--primary-navy);
+}
+
+.input-group input, .input-group select, .input-group textarea {
   width: 100%;
-  padding: 12px;
+  padding: 10px 12px;
   border: 1.5px solid var(--gray-border);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   box-sizing: border-box;
   outline: none;
-  transition: border-color 0.2s;
 }
 
-.input-group input:focus, .input-group textarea:focus {
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus {
   border-color: var(--primary-navy);
+}
+
+.row-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.half {
+  flex: 1;
+}
+
+.phone-input-container {
+  display: flex;
+  border: 1.5px solid var(--gray-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.prefix-box {
+  background-color: #f1f1f1;
+  padding: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  border-right: 1px solid var(--gray-border);
+}
+
+.phone-input-container input {
+  border: none;
+  border-radius: 0;
 }
 
 .hint {
@@ -145,14 +245,39 @@ body {
   margin-top: 4px;
 }
 
+/* Summary Card (Matches 1000045585.png) */
+.summary-card {
+  background-color: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.summary-card h3 {
+  font-size: 0.95rem;
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: var(--primary-navy);
+}
+
+.sum-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: #555;
+}
+
 /* Action Buttons */
 .btn-primary {
   width: 100%;
-  background-color: var(--accent-yellow);
-  color: var(--primary-navy);
+  background-color: var(--primary-navy);
+  color: var(--accent-yellow);
   border: none;
-  padding: 14px;
-  font-size: 1rem;
+  padding: 12px;
+  font-size: 0.95rem;
   font-weight: 700;
   border-radius: 6px;
   cursor: pointer;
@@ -160,13 +285,175 @@ body {
 }
 
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Success Screen Styles */
-.success-card {
+.btn-group {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-secondary {
+  flex: 1;
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* MoMo Login Custom Styles (Matches 1000045586.png) */
+.login-header {
+  padding: 30px 20px;
+}
+
+.momo-logo-large {
+  width: 50px;
+  height: 50px;
+  background-color: var(--accent-yellow);
+  color: var(--primary-navy);
+  font-weight: 800;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  margin: 0 auto 10px auto;
+}
+
+.phone-display-box {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.pin-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.pin-dots-container {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.hidden-pin-input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dot {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--gray-border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: #fff;
+}
+
+/* Countdown Banner (Matches 1000045593.png) */
+.countdown-banner {
+  display: flex;
+  align-items: center;
+  background-color: #fef9e7;
+  border: 1px solid #f9e79f;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #7d6608;
+}
+
+.countdown-icon {
+  font-size: 1.5rem;
+  margin-right: 12px;
+}
+
+/* Admin Waiting Screen (Matches 1000045587.png) */
+.admin-waiting-screen {
+  background-color: var(--primary-navy);
+  color: var(--white);
+  padding: 60px 24px;
   text-align: center;
+  min-height: 480px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.admin-waiting-screen h2 {
+  color: var(--white);
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+}
+
+.admin-waiting-screen p {
+  color: #b0c4de;
+  font-size: 0.85rem;
+  margin-bottom: 30px;
+}
+
+.progress-bar-container {
+  width: 100%;
+  max-width: 320px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.animated-progress-bar {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  font-size: 0.75rem;
+  padding: 8px;
+  text-align: center;
+}
+
+.app-id-display {
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+/* Success Card */
+.success-card {
   padding: 40px 24px;
 }
 
@@ -193,5 +480,4 @@ body {
   font-size: 0.8rem;
   font-weight: 700;
   border-radius: 4px;
-  }
-  
+}
