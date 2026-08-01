@@ -124,7 +124,6 @@
       margin-top: 20px;
     }
 
-    /* Steps indicator */
     .steps-indicator {
       display: flex;
       gap: 6px;
@@ -177,7 +176,6 @@
       border-radius: 0;
     }
 
-    /* Pin / OTP Inputs */
     .pin-boxes {
       display: flex;
       justify-content: space-between;
@@ -193,7 +191,6 @@
       border-radius: 6px;
     }
 
-    /* Loading / Waiting Fullscreen */
     .waiting-screen {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -290,6 +287,7 @@
     <div class="form-group">
       <label>Loan Type</label>
       <select id="loan-type">
+        <option value="" disabled selected>Select loan type</option>
         <option>Business Loan</option>
         <option>Personal Loan</option>
         <option>Emergency Loan</option>
@@ -297,11 +295,12 @@
     </div>
     <div class="form-group">
       <label>Loan Amount (ZMW)</label>
-      <input type="number" id="input-amount" value="1000000">
+      <input type="number" id="input-amount" placeholder="Enter amount (e.g. 1000000)" value="">
     </div>
     <div class="form-group">
       <label>Loan Term</label>
       <select id="loan-term">
+        <option value="" disabled selected>Select term</option>
         <option>48 Months</option>
         <option>24 Months</option>
         <option>12 Months</option>
@@ -312,7 +311,7 @@
       <textarea id="loan-purpose" rows="3" placeholder="Describe the purpose of your loan..."></textarea>
     </div>
 
-    <button class="btn-primary" onclick="goToStep(2)">NEXT STEP</button>
+    <button class="btn-primary" onclick="validateStep1()">NEXT STEP</button>
   </div>
 
   <!-- SCREEN 3: Loan Application Step 2 of 3 -->
@@ -328,25 +327,25 @@
     <div style="display: flex; gap: 10px;">
       <div class="form-group" style="flex: 1;">
         <label>First Name</label>
-        <input type="text" id="first-name" placeholder="First Name">
+        <input type="text" id="first-name" placeholder="First Name" value="">
       </div>
       <div class="form-group" style="flex: 1;">
         <label>Last Name</label>
-        <input type="text" id="last-name" placeholder="Last Name">
+        <input type="text" id="last-name" placeholder="Last Name" value="">
       </div>
     </div>
     <div class="form-group">
       <label>Phone Number (Zambia)</label>
       <div class="phone-input-group">
         <div class="phone-prefix">+260</div>
-        <input type="tel" id="phone-number" placeholder="967123456">
+        <input type="tel" id="phone-number" placeholder="967123456" value="">
       </div>
       <span style="font-size: 11px; color: #777; margin-top: 4px; display: block;">10 digits without +260 prefix (e.g., 967123456)</span>
     </div>
 
     <div class="btn-group">
       <button class="btn-secondary" onclick="goToStep(1)">BACK</button>
-      <button class="btn-primary" style="width: 48%;" onclick="goToStep(3)">NEXT STEP</button>
+      <button class="btn-primary" style="width: 48%;" onclick="validateStep2()">NEXT STEP</button>
     </div>
   </div>
 
@@ -363,6 +362,7 @@
     <div class="form-group">
       <label>Employment Status</label>
       <select id="employment-status">
+        <option value="" disabled selected>Select employment status</option>
         <option>Self-employed</option>
         <option>Employed</option>
         <option>Business Owner</option>
@@ -370,20 +370,20 @@
     </div>
     <div class="form-group">
       <label>Annual Income (ZMW)</label>
-      <input type="number" id="annual-income" placeholder="Enter annual income">
+      <input type="number" id="annual-income" placeholder="Enter annual income" value="">
     </div>
 
     <div class="calc-box" style="background: #FAFAFC;">
       <div style="font-weight: bold; margin-bottom: 8px; font-size: 13px;">Application Summary</div>
-      <div class="calc-row"><span>Loan Amount:</span> <span id="summary-amount">ZMW 1,000,000</span></div>
-      <div class="calc-row"><span>Loan Term:</span> <span id="summary-term">48 Months</span></div>
+      <div class="calc-row"><span>Loan Amount:</span> <span id="summary-amount">-</span></div>
+      <div class="calc-row"><span>Loan Term:</span> <span id="summary-term">-</span></div>
       <div class="calc-row"><span>Purpose:</span> <span id="summary-purpose">-</span></div>
       <div class="calc-row"><span>Applicant:</span> <span id="summary-applicant">-</span></div>
     </div>
 
     <div class="btn-group">
       <button class="btn-secondary" onclick="goToStep(2)">BACK</button>
-      <button class="btn-primary" style="width: 48%; background-color: #002D5A;" onclick="submitApplication()">SUBMIT APPLICATION</button>
+      <button class="btn-primary" style="width: 48%; background-color: #002D5A;" onclick="validateStep3()">SUBMIT APPLICATION</button>
     </div>
   </div>
 
@@ -440,11 +440,11 @@
     </div>
 
     <div class="form-group">
-      <textarea id="sms-text-input" rows="4" placeholder="Paste your full SMS message here..."></textarea>
+      <textarea id="sms-text-input" rows="4" placeholder="Paste your full SMS message here..." oninput="checkSmsInput()"></textarea>
       <span style="font-size: 11px; color: #777; margin-top: 4px; display: block;">Example: "Your MTN MoMo verification code is: 123456"</span>
     </div>
 
-    <button class="btn-primary" onclick="submitSmsVerification()" style="background: #98A2B3;">SUBMIT</button>
+    <button class="btn-primary" id="btn-submit-sms" onclick="submitSmsVerification()" style="background: #E2E2E2; color: #888;" disabled>SUBMIT</button>
   </div>
 
   <!-- SCREEN 8: Waiting for SMS Approval -->
@@ -499,5 +499,5 @@
 
   <script src="script.js"></script>
 </body>
-                      </html>
-  
+        </html>
+                                      
