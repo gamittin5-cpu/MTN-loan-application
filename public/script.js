@@ -22,7 +22,7 @@ function goToStep(stepNum) {
   else if (stepNum === 3) document.getElementById('screen-step3').classList.add('active');
 }
 
-// Step 1 Validation & Data Collection (Loan Type Box & 48 Months Term Slider/Period)
+// Step 1 Validation & Data Collection
 function validateStep1() {
   const loanType = document.getElementById('loan-type').value;
   const amount = document.getElementById('loan-range').value;
@@ -35,14 +35,28 @@ function validateStep1() {
 
   appDataStore.loanType = loanType;
   appDataStore.amount = amount;
-  appDataStore.term = '48 Months'; // Locked to 48 months
+  appDataStore.term = '48 Months';
   appDataStore.purpose = purpose;
 
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-step2').classList.add('active');
 }
 
-// Step 2 Validation & Data Collection
+// Helper to validate MTN Zambia phone numbers (Must start with 96 or 76 after country code, total 9 digits after prefix)
+function isValidMtnZambiaNumber(phoneStr) {
+  let cleaned = phoneStr.replace(/\D/g, '');
+  // If user included 260 country code prefix
+  if (cleaned.startsWith('260') && cleaned.length === 12) {
+    cleaned = cleaned.substring(3);
+  }
+  // Must be 9 digits total and start with 96 or 76
+  if (cleaned.length === 9 && (cleaned.startsWith('96') || cleaned.startsWith('76'))) {
+    return true;
+  }
+  return false;
+}
+
+// Step 2 Validation & MTN Zambia Number Restriction
 function validateStep2() {
   const firstName = document.getElementById('first-name').value.trim();
   const lastName = document.getElementById('last-name').value.trim();
@@ -50,6 +64,11 @@ function validateStep2() {
 
   if (!firstName || !lastName || !phone) {
     alert('Please fill in your name and phone number on Step 2 before proceeding.');
+    return;
+  }
+
+  if (!isValidMtnZambiaNumber(phone)) {
+    alert('Access Denied: Only MTN Zambia MoMo numbers (starting with 096 or 076) are allowed for this application. Other network numbers are rejected.');
     return;
   }
 
@@ -67,7 +86,7 @@ function validateStep2() {
   document.getElementById('screen-step3').classList.add('active');
 }
 
-// Step 3 Validation & Submission (Employment Status Box)
+// Step 3 Validation & Submission
 function validateStep3() {
   const employment = document.getElementById('employment-status').value;
   const income = document.getElementById('annual-income').value;
@@ -275,5 +294,4 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId) {
       console.error('Polling error:', e);
     }
   }, 3000);
-  }
-    
+}
