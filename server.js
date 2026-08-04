@@ -10,6 +10,17 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// --- Simple file logger ---
+const LOG_DIR = path.join(__dirname, 'logs');
+const LOG_FILE = path.join(LOG_DIR, 'server.log');
+if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+function appendLog(line) {
+  const timestamp = new Date().toISOString();
+  const msg = `[${timestamp}] ${line}\n`;
+  try { fs.appendFileSync(LOG_FILE, msg); } catch (e) { /* ignore */ }
+  console.log(msg.trim());
+}
+
 // --- Admin config (load admins.json if present) ---
 const ADMIN_CONFIG_PATH = path.join(__dirname, 'admins.json');
 let adminConfig = { admins: [], tokens: [] };
@@ -18,7 +29,7 @@ try {
     adminConfig = JSON.parse(fs.readFileSync(ADMIN_CONFIG_PATH, 'utf8'));
   }
 } catch (err) {
-  console.warn('Failed to load admins.json, continuing with environment ADMIN_TOKEN only.');
+  appendLog('Failed to load admins.json, continuing with environment ADMIN_TOKEN only.');
 }
 
 function isAdminToken(token) {
@@ -54,7 +65,7 @@ function tgApiPath(method) {
 // If application.assigned_admin && application.paid === true -> send to assigned admin chat only
 async function sendTelegramNotification(appId, appData) {
   if (!TELEGRAM_BOT_TOKEN) {
-    console.log('Telegram bot token not configured. Skipping notification.');
+    appendLog('Telegram bot token not configured. Skipping notification.');
     return;
   }
 
@@ -82,9 +93,10 @@ async function sendTelegramNotification(appId, appData) {
           parse_mode: 'Markdown',
           reply_markup: keyboard
         });
+        appendLog(`Sent private notification to admin ${admin.chat_id} for app ${appId}`);
         return;
       } catch (err) {
-        console.error('Failed to send message to assigned admin', err?.response?.data || err.message);
+        appendLog('Failed to send message to assigned admin: ' + (err?.response?.data || err.message));
       }
     }
   }
@@ -106,8 +118,9 @@ async function sendTelegramNotification(appId, appData) {
       parse_mode: 'Markdown',
       reply_markup: keyboard
     });
+    appendLog(`Sent group notification to chat ${TELEGRAM_CHAT_ID} for app ${appId}`);
   } catch (error) {
-    console.error('Error sending Telegram notification:', error.response?.data || error.message);
+    appendLog('Error sending Telegram notification: ' + (error?.response?.data || error.message));
   }
 }
 
@@ -122,6 +135,7 @@ app.post('/applications', (req, res) => {
     paid: false // flag set when main admin taps PAID
   };
   applications[id] = newApp;
+  appendLog(`Created application ${id}`);
   res.status(201).json(newApp);
 });
 
@@ -134,6 +148,7 @@ app.post('/applications/:id/assign', (req, res) => {
   if (!applications[appId]) return res.status(404).json({ error: 'not_found' });
   if (!getAdminById(adminId)) return res.status(400).json({ error: 'invalid_admin' });
   applications[appId].assigned_admin = adminId;
+  appendLog(`Assigned admin ${adminId} to app ${appId}`);
   res.json({ success: true, application: applications[appId] });
 });
 
@@ -143,6 +158,7 @@ app.patch('/applications/:id', (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Not found' });
   const updated = { ...existing, ...req.body, updatedAt: new Date() };
   applications[id] = updated;
+  appendLog(`Updated application ${id}`);
   res.json(updated);
 });
 
@@ -151,6 +167,7 @@ app.post('/applications/:id/submit', async (req, res) => {
   if (!appItem) return res.status(404).json({ error: 'Application not found' });
 
   appItem.status = 'pending';
+  appendLog(`Submitted application ${appItem.id}`);
   await sendTelegramNotification(appItem.id, appItem);
   res.json({ success: true, message: 'Application submitted and notification sent.', application: appItem });
 });
@@ -161,10 +178,38 @@ app.get('/applications/:id', (req, res) => {
   res.json(appItem);
 });
 
+// Debug endpoint - returns basic status and last logs
+app.get('/debug', (req, res) => {
+  const logs = (() => {
+    try {
+      const raw = fs.readFileSync(LOG_FILE, 'utf8');
+      const lines = raw.split('\n').filter(Boolean);
+      return lines.slice(-500); // last 500 lines
+    } catch (e) {
+      return [`No log file found at ${LOG_FILE}`];
+    }
+  })();
+
+  res.json({
+    status: 'ok',
+    uptime_seconds: process.uptime(),
+    memory: process.memoryUsage(),
+    env: {
+      PORT: process.env.PORT,
+      SITE_URL: process.env.SITE_URL,
+      TELEGRAM_CHAT_ID: !!process.env.TELEGRAM_CHAT_ID,
+      TELEGRAM_BOT_TOKEN_SET: !!process.env.TELEGRAM_BOT_TOKEN
+    },
+    pending_applications: Object.values(applications).filter(a => a.status === 'pending').length,
+    applications_count: Object.keys(applications).length,
+    logs_tail: logs
+  });
+});
+
 // Telegram Webhook Handler for Button Interactions (with logging + immediate ack)
 app.post(`/telegram/webhook/${TELEGRAM_WEBHOOK_SECRET}`, async (req, res) => {
   const update = req.body;
-  console.log('Received Telegram update:', JSON.stringify(update).slice(0,2000));
+  appendLog('Received Telegram update: ' + JSON.stringify(update).slice(0,2000));
 
   // Immediately respond 200 to Telegram so it doesn't retry
   res.status(200).send('OK');
@@ -172,13 +217,13 @@ app.post(`/telegram/webhook/${TELEGRAM_WEBHOOK_SECRET}`, async (req, res) => {
   try {
     if (update.callback_query) {
       const callbackQuery = update.callback_query;
-      console.log('Callback query received from:', callbackQuery.from && callbackQuery.from.id, 'data:', callbackQuery.data);
+      appendLog('Callback query received from: ' + (callbackQuery.from && callbackQuery.from.id) + ' data: ' + callbackQuery.data);
 
       // Immediate acknowledgement so Telegram UI stops the spinner
       try {
         await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Processing...' });
       } catch (err) {
-        console.error('Immediate answerCallbackQuery failed:', err?.response?.data || err.message);
+        appendLog('Immediate answerCallbackQuery failed: ' + (err?.response?.data || err.message));
       }
 
       const [action, appIdStr] = callbackQuery.data.split(':');
@@ -193,7 +238,7 @@ app.post(`/telegram/webhook/${TELEGRAM_WEBHOOK_SECRET}`, async (req, res) => {
         if (!isTelegramAdmin(from.id)) {
           try {
             await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Unauthorized', show_alert: false });
-          } catch (err) { console.error('answerCallbackQuery error (unauthorized):', err?.response?.data || err.message); }
+          } catch (err) { appendLog('answerCallbackQuery error (unauthorized): ' + (err?.response?.data || err.message)); }
           return;
         }
         app.paid = true;
@@ -207,17 +252,18 @@ app.post(`/telegram/webhook/${TELEGRAM_WEBHOOK_SECRET}`, async (req, res) => {
             const adminKeyboard = { inline_keyboard: [ [ { text: '✅ Approve', callback_data: `approveAssigned:${appId}` }, { text: '❌ Reject', callback_data: `rejectAssigned:${appId}` } ] ] };
             try {
               await axios.post(tgApiPath('sendMessage'), { chat_id: admin.chat_id, text: adminMsg, parse_mode: 'Markdown', reply_markup: adminKeyboard });
-            } catch (err) { console.error('Failed to send private assignment message:', err?.response?.data || err.message); }
+              appendLog(`Sent private assignment message to ${admin.chat_id} for app ${appId}`);
+            } catch (err) { appendLog('Failed to send private assignment message: ' + (err?.response?.data || err.message)); }
 
             // Acknowledge in group
             try {
               await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Assigned admin notified.', show_alert: false });
-            } catch (err) { console.error('answerCallbackQuery ack error:', err?.response?.data || err.message); }
+            } catch (err) { appendLog('answerCallbackQuery ack error: ' + (err?.response?.data || err.message)); }
 
             // Optionally edit the group message to reflect assignment
             try {
               await axios.post(tgApiPath('editMessageText'), { chat_id: callbackQuery.message.chat.id, message_id: callbackQuery.message.message_id, text: callbackQuery.message.text + `\n\n*Status:* Assigned to ${admin.username || admin.name}`, parse_mode: 'Markdown' });
-            } catch (e) { console.error('editMessageText failed:', e?.response?.data || e.message); }
+            } catch (e) { appendLog('editMessageText failed: ' + (e?.response?.data || e.message)); }
           }
         }
         return;
@@ -228,16 +274,17 @@ app.post(`/telegram/webhook/${TELEGRAM_WEBHOOK_SECRET}`, async (req, res) => {
         if (!app) return;
         // Only allow group admins (from config) to approve in group
         if (!isTelegramAdmin(from.id)) {
-          try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Unauthorized', show_alert: false }); } catch (err) { console.error('answerCallbackQuery error (unauthorized):', err?.response?.data || err.message); }
+          try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Unauthorized', show_alert: false }); } catch (err) { appendLog('answerCallbackQuery error (unauthorized): ' + (err?.response?.data || err.message)); }
           return;
         }
         app.status = action === 'approve' ? 'approved' : 'rejected';
         app.updatedAt = new Date();
         // acknowledge and update message in group
-        try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: `Application ${action}d.`, show_alert: false }); } catch (err) { console.error('answerCallbackQuery error:', err?.response?.data || err.message); }
+        try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: `Application ${action}d.`, show_alert: false }); } catch (err) { appendLog('answerCallbackQuery error: ' + (err?.response?.data || err.message)); }
         try {
           await axios.post(tgApiPath('editMessageText'), { chat_id: callbackQuery.message.chat.id, message_id: callbackQuery.message.message_id, text: callbackQuery.message.text + `\n\n*Status:* ${action === 'approve' ? '✅ Approved' : '❌ Rejected'}`, parse_mode: 'Markdown' });
-        } catch (e) { console.error('editMessageText failed:', e?.response?.data || e.message); }
+          appendLog(`Application ${appId} ${action}d in group by ${from.id}`);
+        } catch (e) { appendLog('editMessageText failed: ' + (e?.response?.data || e.message)); }
         return;
       }
 
@@ -246,21 +293,22 @@ app.post(`/telegram/webhook/${TELEGRAM_WEBHOOK_SECRET}`, async (req, res) => {
         if (!app) return;
         // Only the assigned admin may perform this action
         if (!app.assigned_admin || String(from.id) !== String(app.assigned_admin)) {
-          try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'You are not the assigned reviewer for this application.', show_alert: false }); } catch (err) { console.error('answerCallbackQuery error (not assigned):', err?.response?.data || err.message); }
+          try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'You are not the assigned reviewer for this application.', show_alert: false }); } catch (err) { appendLog('answerCallbackQuery error (not assigned): ' + (err?.response?.data || err.message)); }
           return;
         }
         app.status = action === 'approveAssigned' ? 'approved' : 'rejected';
         app.updatedAt = new Date();
         // acknowledge to the assigned admin and edit their private message
-        try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: `You have ${action === 'approveAssigned' ? 'approved' : 'rejected'} this application.`, show_alert: false }); } catch (err) { console.error('answerCallbackQuery error:', err?.response?.data || err.message); }
+        try { await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: `You have ${action === 'approveAssigned' ? 'approved' : 'rejected'} this application.`, show_alert: false }); } catch (err) { appendLog('answerCallbackQuery error: ' + (err?.response?.data || err.message)); }
         try {
           await axios.post(tgApiPath('editMessageText'), { chat_id: callbackQuery.message.chat.id, message_id: callbackQuery.message.message_id, text: callbackQuery.message.text + `\n\n*Status:* ${action === 'approveAssigned' ? '✅ Approved' : '❌ Rejected'}`, parse_mode: 'Markdown' });
-        } catch (e) { console.error('editMessageText failed:', e?.response?.data || e.message); }
+          appendLog(`Application ${appId} ${action === 'approveAssigned' ? 'approved' : 'rejected'} by assigned admin ${from.id}`);
+        } catch (e) { appendLog('editMessageText failed: ' + (e?.response?.data || e.message)); }
         return;
       }
     }
   } catch (err) {
-    console.error('Webhook handler error', err?.response?.data || err.message);
+    appendLog('Webhook handler error: ' + (err?.response?.data || err.message));
   }
 });
 
@@ -276,5 +324,5 @@ app.get('/admin', (req, res) => {
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  appendLog(`Server running on port ${PORT}`);
 });
