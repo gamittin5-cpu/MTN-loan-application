@@ -1,0 +1,13 @@
+{
+  "admins": [
+    {
+      "id": 311325284,
+      "username": "gamittin5-cpu",
+      "name": "Primary Admin",
+      "chat_id": 311325284
+    }
+  ],
+  "tokens": [
+    "changeme-admin-token-1"
+  ]
+}
