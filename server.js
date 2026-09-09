@@ -31,14 +31,15 @@ function loadAdmins() {
   try {
     if (fs.existsSync(ADMINS_FILE)) {
       const data = fs.readFileSync(ADMINS_FILE, 'utf8');
-      const entries = JSON.parse(data);
+      const parsed = JSON.parse(data);
+      const entries = Array.isArray(parsed) ? parsed : [];
       return new Map(entries.map(([id, rec]) => [id, {
         authorized: true,
         paid: true,
-        username: rec.username || '',
-        firstName: rec.firstName || 'User',
-        lastName: rec.lastName || '',
-        status: rec.status || 'ACTIVE'
+        username: rec?.username || '',
+        firstName: rec?.firstName || 'User',
+        lastName: rec?.lastName || '',
+        status: rec?.status || 'ACTIVE'
       }]));
     }
   } catch (err) {
@@ -484,3 +485,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, async () => {
   await initBot();
 });
+    
